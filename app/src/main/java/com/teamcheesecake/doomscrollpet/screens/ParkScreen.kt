@@ -72,13 +72,6 @@ fun ParkScreen(
                     color = Color(0xFF3B5D3B),
                 )
             }
-            Image(
-                painter = painterResource(id = R.drawable.pet_park_banner),
-                contentDescription = null,
-                modifier = Modifier
-                    .padding(top = 8.dp)
-                    .fillMaxWidth(0.8f),
-            )
         }
 
         // --- Pets, pinned to the bottom ---

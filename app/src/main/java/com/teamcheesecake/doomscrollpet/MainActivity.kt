@@ -251,6 +251,7 @@ private fun MainAppScreen(    petViewModel: PetViewModel,
                 onFood = petViewModel::feedPet,
                 onWater = petViewModel::waterPet,
                 onExercise = {
+                    android.util.Log.d("ExerciseButton", "Tapped!")
                     scope.launch {
                         val latLng = petViewModel.getCurrentLocation()
                         if (latLng == null) {

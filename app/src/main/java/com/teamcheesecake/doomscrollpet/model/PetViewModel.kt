@@ -253,6 +253,10 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Exposes a one-off location fix for UI actions (e.g. finding nearby parks). Returns null if
+     *  location is unavailable or permission hasn't been granted. */
+    suspend fun getCurrentLocation(): Pair<Double, Double>? = locationRepository.getCurrentLatLng()
+
     /**
      * Fetches this device's current location and accumulates distance traveled since the last
      * fix (filtering out small GPS jitter). Purely local — nothing here is published or shared.

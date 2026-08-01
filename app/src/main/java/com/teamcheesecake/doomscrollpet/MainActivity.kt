@@ -48,6 +48,12 @@ import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
 import kotlinx.coroutines.delay
 import com.google.firebase.auth.FirebaseAuth
 import com.teamcheesecake.doomscrollpet.screens.ProfileScreen
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import com.teamcheesecake.doomscrollpet.screens.ParkScreen
 
 private object Routes {
     const val SIGN_IN = "onboarding/signin"
@@ -58,6 +64,7 @@ private object Routes {
     const val CONNECT = "onboarding/connect"
     const val MAIN = "main"
     const val PROFILE = "main/profile"
+    const val PARK = "main/park"
 }
 
 private const val LOCATION_REFRESH_INTERVAL_MS = 15_000L
@@ -167,6 +174,7 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
                 MainAppScreen(
                     petViewModel = petViewModel,
                     onNavigateToProfile = { navController.navigate(Routes.PROFILE) },
+                    onNavigateToPark = { navController.navigate(Routes.PARK) },
                 )
             }
             composable(Routes.PROFILE) {
@@ -179,14 +187,23 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
                     onBack = { navController.popBackStack() },
                 )
             }
+            composable(Routes.PARK) {
+                ParkScreen(
+                    friendPetStatuses = state.friendPetStatuses,
+                    onBack = { navController.popBackStack() },
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun MainAppScreen(petViewModel: PetViewModel, onNavigateToProfile: () -> Unit) {
+private fun MainAppScreen(    petViewModel: PetViewModel,
+                              onNavigateToProfile: () -> Unit,
+                              onNavigateToPark: () -> Unit,) {
     val state = petViewModel.uiState
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     var locationPermissionGranted by remember { mutableStateOf(hasLocationPermission(context)) }
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -233,7 +250,35 @@ private fun MainAppScreen(petViewModel: PetViewModel, onNavigateToProfile: () ->
             com.teamcheesecake.doomscrollpet.screens.PetActionBottomBar(
                 onFood = petViewModel::feedPet,
                 onWater = petViewModel::waterPet,
-                onExercise = petViewModel::exercisePet
+                onExercise = {
+                    scope.launch {
+                        val latLng = petViewModel.getCurrentLocation()
+                        if (latLng == null) {
+                            Toast.makeText(
+                                context,
+                                "Couldn't get your location — check location permission",
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                            return@launch
+                        }
+                        val (lat, lng) = latLng
+                        val mapsIntent = Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse("geo:$lat,$lng?q=parks+near+me"),
+                        ).apply { setPackage("com.google.android.apps.maps") }
+
+                        if (mapsIntent.resolveActivity(context.packageManager) != null) {
+                            context.startActivity(mapsIntent)
+                        } else {
+                            context.startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("https://www.google.com/maps/search/parks/@$lat,$lng,14z"),
+                                ),
+                            )
+                        }
+                    }
+                },
             )
         },
     ) { innerPadding ->
@@ -242,6 +287,7 @@ private fun MainAppScreen(petViewModel: PetViewModel, onNavigateToProfile: () ->
             myCode = state.myCode,
             onSendFriendRequest = petViewModel::sendFriendRequest,
             onNavigateToProfile = onNavigateToProfile,
+            onNavigateToPark = onNavigateToPark,
             modifier = Modifier.padding(innerPadding),
         )
     }

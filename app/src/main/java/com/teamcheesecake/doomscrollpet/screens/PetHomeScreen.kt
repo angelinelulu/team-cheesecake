@@ -66,6 +66,7 @@ fun PetHomeScreen(
     myCode: String,
     onSendFriendRequest: (String) -> Unit,
     onNavigateToProfile: () -> Unit,
+    onNavigateToPark: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var profileMenuExpanded by remember { mutableStateOf(false) }
@@ -144,7 +145,9 @@ fun PetHomeScreen(
         ) {
             // Pet Park icon row
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onNavigateToPark),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {

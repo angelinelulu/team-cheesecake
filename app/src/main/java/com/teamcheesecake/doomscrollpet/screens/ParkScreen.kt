@@ -118,7 +118,7 @@ private fun ScatteredPet(friend: FriendPetStatus) {
         }
 
         Box(
-            modifier = Modifier.size(100.dp),
+            modifier = Modifier.size(120.dp),
             contentAlignment = Alignment.Center,
         ) {
             AnimalVisual(animal = friend.animal, health = friend.health)
@@ -151,7 +151,7 @@ private fun AnimalVisual(animal: Animal, health: Int) {
         Image(
             painter = rememberAsyncImagePainter(model = gifRes, imageLoader = imageLoader),
             contentDescription = animal.displayName,
-            modifier = Modifier.size(80.dp),
+            modifier = Modifier.size(120.dp),
         )
     } else {
         Text(text = animal.emoji, style = MaterialTheme.typography.displayLarge)

@@ -12,9 +12,8 @@ import com.teamcheesecake.doomscrollpet.data.LocationRepository
 import com.teamcheesecake.doomscrollpet.data.ProximityNotifier
 import com.teamcheesecake.doomscrollpet.data.ScreenTimeRepository
 import kotlinx.coroutines.launch
-import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
-import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.tasks.await
 
 private const val BASE_HEALTH = 80
@@ -46,7 +45,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
 
     fun loadOrCreateAccountCode(uid: String) {
         viewModelScope.launch {
-            val userDocRef = Firebase.firestore.collection("users").document(uid)
+            val userDocRef = FirebaseFirestore.getInstance().collection("users").document(uid)
             val snapshot = userDocRef.get().await()
             val existingCode = snapshot.getString("myCode")
 

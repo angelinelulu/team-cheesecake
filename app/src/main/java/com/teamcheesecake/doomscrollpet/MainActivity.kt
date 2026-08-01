@@ -48,8 +48,7 @@ import com.teamcheesecake.doomscrollpet.screens.onboarding.ConnectScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.NameScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.SignInScreen
 import kotlinx.coroutines.delay
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.auth.FirebaseAuth
 
 private object Routes {
     const val SIGN_IN = "onboarding/signin"
@@ -83,7 +82,7 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
 
     val startDestination = remember {
         when {
-            Firebase.auth.currentUser == null -> Routes.SIGN_IN
+            FirebaseAuth.getInstance().currentUser == null -> Routes.SIGN_IN
             !state.onboardingComplete -> Routes.NAME   // ⚠️ match this to whatever your actual "done onboarding" flag is called
             else -> Routes.MAIN
         }

@@ -1,5 +1,6 @@
 package com.teamcheesecake.doomscrollpet.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.teamcheesecake.doomscrollpet.model.Friend
 import com.teamcheesecake.doomscrollpet.model.PetUiState
+import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
 import java.util.Locale
 
 @Composable
@@ -29,7 +31,9 @@ fun ProfileScreen(
     var codeInput by remember { mutableStateOf("") }
 
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .background(YellowMain),
         contentPadding = PaddingValues(24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {

@@ -233,7 +233,7 @@ fun PetHomeScreen(
                     .height(10.dp)
                     .clip(RoundedCornerShape(50)),
                 color = healthColor(state.health),
-                trackColor = Color.LightGray,
+                trackColor = Color.LightGray.copy(alpha = 0.5f),
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -250,7 +250,7 @@ fun PetHomeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .background(Color.LightGray, RoundedCornerShape(8.dp)),
+                    .background(YellowMain, RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -336,13 +336,13 @@ private fun ActionIcon(label: String, iconRes: Int, onClick: () -> Unit) {
         Box(
             modifier = Modifier
                 .size(56.dp)
-                .background(Color.White, RoundedCornerShape(8.dp)),
+                .background(YellowBack, RoundedCornerShape(8.dp)),
             contentAlignment = Alignment.Center,
         ) {
             Image(
                 painter = painterResource(id = iconRes),
                 contentDescription = label,
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier.size(48.dp),
             )
         }
         Text(text = label, style = MaterialTheme.typography.labelSmall)

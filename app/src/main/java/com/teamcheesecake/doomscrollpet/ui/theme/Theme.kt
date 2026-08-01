@@ -12,6 +12,8 @@ private val LightColorScheme = lightColorScheme(
     onBackground = PetText,
     surface = YellowMain,
     onSurface = PetText,
+    surfaceVariant = YellowBack,
+    onSurfaceVariant = PetText,
 )
 
 @Composable

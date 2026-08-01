@@ -13,7 +13,20 @@
           "package_name": "com.teamcheesecake.doomscrollpet"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "757475054700-j0bdusc3n0k2k2v60o8nmbtt2vjlhpc4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.teamcheesecake.doomscrollpet",
+            "certificate_hash": "4129723ec797d69a7297e5d3fdc7747ef2fa2371"
+          }
+        },
+        {
+          "client_id": "757475054700-cmghdfgptcbp07auogknmaojhlot2l00.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCYgRxgT3rwOKH8K4_hFxjaCSB14uAvxJc"
@@ -21,7 +34,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "757475054700-cmghdfgptcbp07auogknmaojhlot2l00.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

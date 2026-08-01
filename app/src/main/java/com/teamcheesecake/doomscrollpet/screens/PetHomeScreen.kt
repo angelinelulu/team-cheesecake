@@ -67,7 +67,8 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .padding(16.dp),
+                .padding(16.dp)
+                .background(YellowBack),
         ) {
             // Pet Park icon row (swap in your own icon assets here)
             Row(
@@ -82,10 +83,11 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text(text = "Doomscroll today: ${state.doomscrollMinutesToday} / ${state.doomscrollLimitMinutes} min")
-            Text(text = "Good-app time today: ${state.moreAppMinutesToday} min")
-            Text(text = "Distance today: ${formatKm(state.distanceMetersToday)} km")
-            Text(text = "Streak: ${state.streakDays} days")
+            Text(text = "Doomscroll Timer: ${state.doomscrollMinutesToday} / ${state.doomscrollLimitMinutes} min")
+            Text(text = "Productivity Timer: ${state.moreAppMinutesToday} min(s)")
+            Text(text = "Distance Covered Today: ${formatKm(state.distanceMetersToday)} km")
+            Text(text = "Streak: ${state.streakDays} day(s)")
+            Text(text = "Badges")
             if (!state.screenTimeConnected) {
                 Text(
                     text = "Not connected: screen time",

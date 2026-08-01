@@ -299,6 +299,31 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
             }
     }
 
+    /**
+     * Adjusts a friend's health by [delta] (e.g. from "Give Treat!" or "Nudge!"), clamped 0-100.
+     * Looks up their Firestore doc by myCode since that's the only identifier we have for them.
+     */
+    fun adjustFriendHealth(code: String, delta: Int) {
+        viewModelScope.launch {
+            try {
+                val query = db.collection("users")
+                    .whereEqualTo("myCode", code)
+                    .limit(1)
+                    .get()
+                    .await()
+                val doc = query.documents.firstOrNull() ?: return@launch
+                val currentHealth = (doc.getLong("health") ?: 80L).toInt()
+                val newHealth = (currentHealth + delta).coerceIn(0, 100)
+                doc.reference.set(mapOf("health" to newHealth), SetOptions.merge()).await()
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to adjust friend health for code $code", e)
+            }
+        }
+    }
+
+    fun giveTreatToFriend(code: String) = adjustFriendHealth(code, 10)
+    fun nudgeFriend(code: String) = adjustFriendHealth(code, 5)
+
     /** Exposes a one-off location fix for UI actions (e.g. finding nearby parks). Returns null if
      *  location is unavailable or permission hasn't been granted. */
     suspend fun getCurrentLocation(): Pair<Double, Double>? = locationRepository.getCurrentLatLng()

@@ -27,13 +27,21 @@ import coil.decode.GifDecoder
 import com.teamcheesecake.doomscrollpet.R
 import com.teamcheesecake.doomscrollpet.model.Animal
 import com.teamcheesecake.doomscrollpet.model.FriendPetStatus
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 @Composable
 fun ParkScreen(
     friendPetStatuses: List<FriendPetStatus>,
+    onGiveTreat: (String) -> Unit,
+    onNudge: (String) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var selectedFriend by remember { mutableStateOf<FriendPetStatus?>(null) }
     Box(modifier = modifier.fillMaxSize()) {
         // --- Full-screen background scene ---
         Image(
@@ -92,7 +100,84 @@ fun ParkScreen(
                 horizontalArrangement = Arrangement.spacedBy(20.dp),
             ) {
                 items(friendPetStatuses) { friend ->
-                    ScatteredPet(friend)
+                    ScatteredPet(friend, onClick = { selectedFriend = friend })
+                }
+            }
+        }
+        selectedFriend?.let { friend ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .clickable(onClick = { selectedFriend = null }),
+                contentAlignment = Alignment.Center,
+            ) {
+                Card(
+                    modifier = Modifier
+                        .padding(32.dp)
+                        .clickable(enabled = false) {}, // absorb clicks so tapping the card doesn't dismiss it
+                    shape = RoundedCornerShape(20.dp),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Default.Favorite,
+                                contentDescription = null,
+                                tint = Color(0xFFE53935),
+                                modifier = Modifier.size(48.dp),
+                            )
+                            Text(
+                                "${friend.health}%",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "${friend.ownerName}'s ${friend.animal.displayName}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row {
+                            val filledHearts = (friend.health / 20).coerceIn(0, 5)
+                            repeat(5) { index ->
+                                Icon(
+                                    Icons.Default.Favorite,
+                                    contentDescription = null,
+                                    tint = if (index < filledHearts) Color(0xFFE53935) else Color.LightGray,
+                                    modifier = Modifier
+                                        .size(28.dp)
+                                        .padding(horizontal = 2.dp),
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+                        LinearProgressIndicator(
+                            progress = { friend.health / 100f },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(10.dp)
+                                .clip(RoundedCornerShape(50)),
+                        )
+
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Button(onClick = { onGiveTreat(friend.code) }) {
+                                Text("Give Treat!")
+                            }
+                            Button(onClick = { onNudge(friend.code) }) {
+                                Text("Nudge!")
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -100,8 +185,11 @@ fun ParkScreen(
 }
 
 @Composable
-private fun ScatteredPet(friend: FriendPetStatus) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+private fun ScatteredPet(friend: FriendPetStatus, onClick: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable(onClick = onClick),
+    ) {
         Box(contentAlignment = Alignment.Center) {
             Icon(
                 Icons.Default.Favorite,

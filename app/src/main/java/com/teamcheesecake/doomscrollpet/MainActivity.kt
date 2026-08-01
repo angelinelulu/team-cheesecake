@@ -195,6 +195,8 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
             composable(Routes.PARK) {
                 ParkScreen(
                     friendPetStatuses = state.friendPetStatuses,
+                    onGiveTreat = petViewModel::giveTreatToFriend,
+                    onNudge = petViewModel::nudgeFriend,
                     onBack = { navController.popBackStack() },
                 )
             }

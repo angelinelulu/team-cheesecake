@@ -40,6 +40,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import java.util.Locale
+import androidx.compose.foundation.clickable
 
 @Composable
 fun PetActionBottomBar(
@@ -65,7 +66,10 @@ fun PetHomeScreen(
     state: PetUiState,
     myCode: String,
     onSendFriendRequest: (String) -> Unit,
-    onNavigateToProfile: () -> Unit,
+    onSendFriendRequest: (String) -> Unit,
+    onNavigateToProfile: () -> Unit = {},
+    onNavigateToPark: () -> Unit = {},
+    onSignOut: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var profileMenuExpanded by remember { mutableStateOf(false) }
@@ -144,7 +148,9 @@ fun PetHomeScreen(
         ) {
             // Pet Park icon row
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToPark() },
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {

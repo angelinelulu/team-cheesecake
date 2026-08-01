@@ -337,7 +337,7 @@ fun PetHomeScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.cat_character), // Use your actual drawable name
+                        painter = painterResource(id = R.drawable.cat), // Use your actual drawable name
                         contentDescription = "Cat Pet",
                         modifier = Modifier
                             .size(120.dp)

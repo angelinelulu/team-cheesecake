@@ -30,15 +30,23 @@ import java.util.Locale
 import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
 import com.teamcheesecake.doomscrollpet.R
+import kotlinx.coroutines.delay
 
 @Composable
 fun PetActionBottomBar(
-    canFood: Boolean,
-    canWater: Boolean,
+    state: PetUiState,
     onFood: () -> Unit,
     onWater: () -> Unit,
     onExercise: () -> Unit
 ) {
+    var currentTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(1000)
+            currentTime = System.currentTimeMillis()
+        }
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -49,17 +57,32 @@ fun PetActionBottomBar(
         ActionIcon(
             label = "Food",
             iconRes = R.drawable.feed_icon,
-            enabled = canFood,
+            enabled = state.canFeedTreat,
+            cooldownMillis = getCooldownMillis(state.lastFedTimestamp, currentTime),
             onClick = onFood
         )
         ActionIcon(
             label = "Water",
             iconRes = R.drawable.water_icon,
-            enabled = canWater,
+            enabled = state.canGiveWater,
+            cooldownMillis = getCooldownMillis(state.lastWaterTimestamp, currentTime),
             onClick = onWater
         )
         ActionIcon(label = "Exercise", iconRes = R.drawable.exercise_icon, onClick = onExercise)
     }
+}
+
+private fun getCooldownMillis(lastTimestamp: Long, currentTime: Long): Long {
+    val cooldownPeriod = 24 * 60 * 60 * 1000L
+    val elapsed = currentTime - lastTimestamp
+    return if (elapsed < cooldownPeriod) cooldownPeriod - elapsed else 0L
+}
+
+private fun formatCooldown(millis: Long): String {
+    val totalSeconds = millis / 1000
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    return String.format(Locale.US, "%dh %dm", hours, minutes)
 }
 
 @Composable
@@ -331,6 +354,7 @@ private fun ActionIcon(
     label: String,
     iconRes: Int,
     enabled: Boolean = true,
+    cooldownMillis: Long = 0,
     onClick: () -> Unit
 ) {
     Column(
@@ -352,6 +376,22 @@ private fun ActionIcon(
                 modifier = Modifier.size(48.dp),
                 alpha = if (enabled) 1f else 0.5f
             )
+            if (!enabled && cooldownMillis > 0) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(8.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = formatCooldown(cooldownMillis),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
         }
         Text(
             text = label,

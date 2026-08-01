@@ -24,8 +24,8 @@ private const val BASE_HEALTH = 80
 private const val AVOID_MINUTE_PENALTY = 2
 private const val MORE_MINUTE_BONUS = 1
 private const val METERS_PER_HEALTH_POINT = 100
-private const val FOOD_HEALTH_BONUS = 10
-private const val WATER_HEALTH_BONUS = 5
+private const val FOOD_HEALTH_BONUS = 50
+private const val WATER_HEALTH_BONUS = 25
 
 // Ignore GPS deltas smaller than this between fixes — otherwise standing still slowly racks up
 // "distance" from ordinary GPS jitter.

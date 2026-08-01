@@ -288,8 +288,7 @@ private fun MainAppScreen(
         containerColor = YellowMain,
         bottomBar = {
             com.teamcheesecake.doomscrollpet.screens.PetActionBottomBar(
-                canFood = state.canFeedTreat,
-                canWater = state.canGiveWater,
+                state = state,
                 onFood = petViewModel::feedPet,
                 onWater = petViewModel::waterPet,
                 onExercise = onNavigateToNearbyParks,

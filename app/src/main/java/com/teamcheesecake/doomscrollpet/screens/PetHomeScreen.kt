@@ -49,7 +49,21 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
         )
 
         Text(text = "Doomscroll today: ${state.doomscrollMinutesToday} / ${state.doomscrollLimitMinutes} min")
+        Text(text = "Good-app time today: ${state.moreAppMinutesToday} min")
+        Text(text = "Steps today: ${state.stepsToday}")
         Text(text = "Streak: ${state.streakDays} days")
+
+        if (!state.screenTimeConnected || !state.healthAppConnected) {
+            Text(
+                text = buildString {
+                    append("Not connected: ")
+                    if (!state.screenTimeConnected) append("screen time ")
+                    if (!state.healthAppConnected) append("health")
+                },
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
     }
 }
 

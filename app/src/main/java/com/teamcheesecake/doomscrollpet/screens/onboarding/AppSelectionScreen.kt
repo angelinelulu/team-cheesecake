@@ -16,16 +16,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.teamcheesecake.doomscrollpet.model.AppOption
 
 /**
  * Shared by both the "avoid" and "do more of" onboarding steps — same
- * checklist UI, different title/options/selection passed in.
+ * checklist UI, different title/options/selection passed in. `selected`/`onToggle`
+ * key off package name, not display name.
  */
 @Composable
 fun AppSelectionScreen(
     title: String,
     subtitle: String,
-    options: List<String>,
+    options: List<AppOption>,
     selected: Set<String>,
     onToggle: (String) -> Unit,
     onNext: () -> Unit,
@@ -52,10 +54,10 @@ fun AppSelectionScreen(
                         .padding(vertical = 4.dp),
                 ) {
                     Checkbox(
-                        checked = selected.contains(app),
-                        onCheckedChange = { onToggle(app) },
+                        checked = selected.contains(app.packageName),
+                        onCheckedChange = { onToggle(app.packageName) },
                     )
-                    Text(text = app)
+                    Text(text = app.displayName)
                 }
             }
         }

@@ -282,6 +282,23 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun logTimeWithFriend() {
+        uiState = uiState.copy(proximityBonus = uiState.proximityBonus + 10)
+        recomputeHealth()
+    }
+
+    fun feedPet() {
+        uiState = uiState.copy(health = (uiState.health + 5).coerceAtMost(100))
+    }
+
+    fun waterPet() {
+        uiState = uiState.copy(health = (uiState.health + 2).coerceAtMost(100))
+    }
+
+    fun exercisePet() {
+        uiState = uiState.copy(health = (uiState.health + 8).coerceAtMost(100))
+    }
+
     override fun onCleared() {
         super.onCleared()
         friendLinksListener?.remove()

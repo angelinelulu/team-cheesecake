@@ -12,13 +12,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -35,8 +30,6 @@ fun FriendsScreen(
     onDeclineRequest: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var codeInput by remember { mutableStateOf("") }
-
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -49,26 +42,6 @@ fun FriendsScreen(
             text = "Share this with friends so they can add you.",
             style = MaterialTheme.typography.labelSmall,
         )
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = codeInput,
-                onValueChange = { codeInput = it },
-                label = { Text("Friend's code") },
-                singleLine = true,
-                modifier = Modifier.weight(1f),
-            )
-            Button(
-                onClick = {
-                    onSendFriendRequest(codeInput)
-                    codeInput = ""
-                },
-                enabled = codeInput.isNotBlank(),
-                modifier = Modifier.padding(start = 8.dp),
-            ) {
-                Text("Request")
-            }
-        }
 
         if (incomingRequests.isNotEmpty()) {
             Text(text = "Requests", style = MaterialTheme.typography.labelSmall)

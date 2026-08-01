@@ -18,6 +18,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -47,8 +48,11 @@ import com.teamcheesecake.doomscrollpet.screens.onboarding.AppSelectionScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.ConnectScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.NameScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.SignInScreen
+import com.teamcheesecake.doomscrollpet.ui.theme.DoomscrollPetTheme
+import com.teamcheesecake.doomscrollpet.ui.theme.YellowBack
 import kotlinx.coroutines.delay
 import com.google.firebase.auth.FirebaseAuth
+import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
 
 private object Routes {
     const val SIGN_IN = "onboarding/signin"
@@ -70,7 +74,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         ProximityNotifier.ensureChannel(this)
         setContent {
-            DoomscrollPetApp(petViewModel)
+            DoomscrollPetTheme {
+                DoomscrollPetApp(petViewModel)
+            }
         }
     }
 }
@@ -89,8 +95,9 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
         if (FirebaseAuth.getInstance().currentUser == null) Routes.SIGN_IN else Routes.SIGN_IN
     }
 
-    NavHost(navController = navController, startDestination = startDestination) {
-        composable(Routes.SIGN_IN) {
+    Surface(color = YellowBack) {
+        NavHost(navController = navController, startDestination = startDestination) {
+            composable(Routes.SIGN_IN) {
             SignInScreen(
                 onSignInSuccess = { uid ->
                     FirebaseManager.getOrCreateUserProfile(uid) {
@@ -156,6 +163,7 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
         }
     }
 }
+}
 
 @Composable
 private fun MainAppScreen(petViewModel: PetViewModel) {
@@ -199,8 +207,9 @@ private fun MainAppScreen(petViewModel: PetViewModel) {
     }
 
     Scaffold(
+        containerColor = YellowMain,
         bottomBar = {
-            NavigationBar {
+            NavigationBar(containerColor = YellowBack) {
                 NavigationBarItem(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },

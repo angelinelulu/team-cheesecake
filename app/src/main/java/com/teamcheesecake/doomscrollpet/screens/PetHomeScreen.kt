@@ -22,6 +22,9 @@ import androidx.compose.ui.unit.dp
 import com.teamcheesecake.doomscrollpet.model.PetMood
 import com.teamcheesecake.doomscrollpet.model.PetUiState
 import com.teamcheesecake.doomscrollpet.ui.theme.YellowBack
+import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
+import com.teamcheesecake.doomscrollpet.ui.theme.ButtonGreen
+import com.teamcheesecake.doomscrollpet.ui.theme.PetText
 import java.util.Locale
 
 @Composable
@@ -68,7 +71,7 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
                 .fillMaxWidth()
                 .weight(1f)
                 .padding(16.dp)
-                .background(YellowBack),
+                .background(YellowMain),
         ) {
             // Pet Park icon row (swap in your own icon assets here)
             Row(

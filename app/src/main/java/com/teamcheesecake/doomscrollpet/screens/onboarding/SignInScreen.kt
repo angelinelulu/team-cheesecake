@@ -36,11 +36,13 @@ fun SignInScreen(onSignInSuccess: (uid: String) -> Unit)  {
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
+        android.util.Log.d("SignIn", "Activity result code: ${result.resultCode}")
         if (result.resultCode == Activity.RESULT_OK) {
             isLoading = true
             try {
                 val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
                 val account = task.getResult(ApiException::class.java)
+                android.util.Log.d("SignIn", "Got Google account, idToken present: ${account.idToken != null}")
                 val credential = GoogleAuthProvider.getCredential(account.idToken, null)
 
                 FirebaseAuth.getInstance().signInWithCredential(credential)
@@ -53,13 +55,18 @@ fun SignInScreen(onSignInSuccess: (uid: String) -> Unit)  {
                                 onSignInSuccess(it.uid)
                             }
                         } else {
+                            android.util.Log.e("SignIn", "Firebase sign-in failed", authResult.exception)
                             errorMessage = "Sign-in failed: ${authResult.exception?.message}"
                         }
                     }
             } catch (e: ApiException) {
                 isLoading = false
+                android.util.Log.e("SignIn", "Google Sign-In ApiException, status code: ${e.statusCode}", e)
                 errorMessage = "Google sign-in error: ${e.statusCode}"
             }
+        } else {
+            android.util.Log.w("SignIn", "Sign-in canceled or failed, resultCode: ${result.resultCode}")
+            errorMessage = "Sign-in was canceled"
         }
     }
 

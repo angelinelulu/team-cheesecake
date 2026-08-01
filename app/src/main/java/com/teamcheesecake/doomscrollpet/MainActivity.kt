@@ -80,21 +80,27 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
     val navController = rememberNavController()
     val state = petViewModel.uiState
 
+    // Always start at SIGN_IN if there's no current user. If there IS a current
+    // user (e.g. app was force-closed and reopened), we still route through
+    // SIGN_IN's success handler logic below rather than trusting local state here,
+    // since local PetViewModel state doesn't yet reflect what's actually saved in
+    // Firestore on a cold launch.
     val startDestination = remember {
-        when {
-            FirebaseAuth.getInstance().currentUser == null -> Routes.SIGN_IN
-            !state.onboardingComplete -> Routes.NAME   // ⚠️ match this to whatever your actual "done onboarding" flag is called
-            else -> Routes.MAIN
-        }
+        if (FirebaseAuth.getInstance().currentUser == null) Routes.SIGN_IN else Routes.SIGN_IN
     }
 
     NavHost(navController = navController, startDestination = startDestination) {
         composable(Routes.SIGN_IN) {
             SignInScreen(
                 onSignInSuccess = { uid ->
-                    petViewModel.loadOrCreateAccountCode(uid)
-                    navController.navigate(Routes.NAME) {
-                        popUpTo(Routes.SIGN_IN) { inclusive = true }
+                    FirebaseManager.getOrCreateUserProfile(uid) {
+                        FirebaseManager.getOnboardingStatus(uid) { onboardingComplete ->
+                            petViewModel.loadOrCreateAccountCode(uid)
+                            val destination = if (onboardingComplete) Routes.MAIN else Routes.NAME
+                            navController.navigate(destination) {
+                                popUpTo(Routes.SIGN_IN) { inclusive = true }
+                            }
+                        }
                     }
                 },
             )
@@ -162,7 +168,7 @@ private fun MainAppScreen(petViewModel: PetViewModel) {
         contract = ActivityResultContracts.RequestMultiplePermissions(),
     ) { results ->
         locationPermissionGranted = results[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-            results[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+                results[Manifest.permission.ACCESS_COARSE_LOCATION] == true
     }
 
     LaunchedEffect(Unit) {
@@ -224,7 +230,7 @@ private fun MainAppScreen(petViewModel: PetViewModel) {
 
 private fun hasLocationPermission(context: Context): Boolean =
     ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
-        PackageManager.PERMISSION_GRANTED
+            PackageManager.PERMISSION_GRANTED
 
 private fun locationPermissions(): Array<String> {
     val permissions = mutableListOf(

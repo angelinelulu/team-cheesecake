@@ -1,33 +1,50 @@
 {
   "project_info": {
-    "project_number": "523208131785",
-    "project_id": "snoot-95d75",
-    "storage_bucket": "snoot-95d75.firebasestorage.app"
+    "project_number": "757475054700",
+    "firebase_url": "https://team-cheesecake-default-rtdb.firebaseio.com",
+    "project_id": "team-cheesecake",
+    "storage_bucket": "team-cheesecake.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:523208131785:android:e4c24af17160e305227918",
+        "mobilesdk_app_id": "1:757475054700:android:876baea9112fa4989ff449",
         "android_client_info": {
           "package_name": "com.teamcheesecake.doomscrollpet"
         }
       },
       "oauth_client": [
         {
-          "client_id": "523208131785-a685pcvv815qnj23k41cba7avuravok3.apps.googleusercontent.com",
+          "client_id": "757475054700-2t41c863tvisb1jeenrcmvjpktplqa1c.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.teamcheesecake.doomscrollpet",
+            "certificate_hash": "952c24f93609521dbe5519bb12210d61b4143a00"
+          }
+        },
+        {
+          "client_id": "757475054700-j0bdusc3n0k2k2v60o8nmbtt2vjlhpc4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.teamcheesecake.doomscrollpet",
+            "certificate_hash": "4129723ec797d69a7297e5d3fdc7747ef2fa2371"
+          }
+        },
+        {
+          "client_id": "757475054700-cmghdfgptcbp07auogknmaojhlot2l00.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBBIBdpgWkxqSSrL2sqmTBciCwh_yhNWIE"
+          "current_key": "AIzaSyCYgRxgT3rwOKH8K4_hFxjaCSB14uAvxJc"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "523208131785-a685pcvv815qnj23k41cba7avuravok3.apps.googleusercontent.com",
+              "client_id": "757475054700-cmghdfgptcbp07auogknmaojhlot2l00.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

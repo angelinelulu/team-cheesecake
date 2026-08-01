@@ -221,15 +221,32 @@ private fun MainAppScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                petViewModel.refreshScreenTime()
+            when (event) {
+                Lifecycle.Event.ON_START -> AppVisibilityTracker.isAppInForeground = true
+                Lifecycle.Event.ON_STOP -> AppVisibilityTracker.isAppInForeground = false
+                Lifecycle.Event.ON_RESUME -> petViewModel.refreshScreenTime()
+                else -> {}
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+        onDispose {
+            AppVisibilityTracker.isAppInForeground = false
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
+
     LaunchedEffect(Unit) {
         petViewModel.refreshScreenTime()
+    }
+
+    // Start the background service when reaching the main screen
+    LaunchedEffect(Unit) {
+        val intent = Intent(context, ScreenTimeService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        } else {
+            context.startService(intent)
+        }
     }
 
     Scaffold(

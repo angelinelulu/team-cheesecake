@@ -118,10 +118,10 @@ private fun ScatteredPet(friend: FriendPetStatus) {
         }
 
         Box(
-            modifier = Modifier.size(240.dp),
+            modifier = Modifier.size(120.dp),
             contentAlignment = Alignment.Center,
         ) {
-            AnimalVisual(animal = friend.animal, health = friend.health)
+            AnimalVisual(animal = friend.animal, health = friend.health, size = 120.dp)
         }
 
         Text(
@@ -133,11 +133,12 @@ private fun ScatteredPet(friend: FriendPetStatus) {
 
 @Composable
 internal fun AnimalVisual(animal: Animal, health: Int, size: androidx.compose.ui.unit.Dp = 240.dp) {
-    val isSick = health < 50 // matches the happy/sad threshold used across the app
+    val isDogSick = health < 60
+    val isCatSick = health < 20
 
     val gifRes: Int? = when (animal) {
-        Animal.DOG -> if (isSick) R.drawable.dog_character_sick else R.drawable.dog_character
-        Animal.CAT -> R.drawable.cat_character // no sick variant yet — always healthy gif
+        Animal.DOG -> if (isDogSick) R.drawable.dog_character_sick else R.drawable.dog_character
+        Animal.CAT -> if (isCatSick) R.drawable.cat_character_sick else R.drawable.cat_character
         else -> null
     }
 

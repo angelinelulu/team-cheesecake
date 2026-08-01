@@ -10,7 +10,6 @@ enum class Animal(val displayName: String, val emoji: String) {
     PANDA("Panda", "🐼"),
     FOX("Fox", "🦊"),
     OWL("Owl", "🦉"),
-    BUNNY("Bunny", "🐰"),
 }
 
 // Distance under which two friends are considered "nearby" for alerting/health-recovery purposes.
@@ -97,11 +96,4 @@ data class PetUiState(
 
     val isOverLimit: Boolean
         get() = doomscrollMinutesToday >= doomscrollLimitMinutes
-
-    val petEmoji: String
-        get() = when (mood) {
-            PetMood.THRIVING, PetMood.OKAY -> animal.emoji
-            PetMood.SICK -> "${animal.emoji}🤒"
-            PetMood.CRITICAL -> "${animal.emoji}💀"
-        }
 }

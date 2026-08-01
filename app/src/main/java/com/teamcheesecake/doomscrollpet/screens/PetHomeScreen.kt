@@ -243,7 +243,7 @@ fun PetHomeScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = state.petEmoji, style = MaterialTheme.typography.headlineLarge)
+                    AnimalVisual(animal = state.animal, health = state.health)
                     Text(
                         text = moodMessage(state),
                         style = MaterialTheme.typography.bodyLarge,

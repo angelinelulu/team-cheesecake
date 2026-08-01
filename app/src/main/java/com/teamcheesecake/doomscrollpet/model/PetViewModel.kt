@@ -19,6 +19,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
+// Animal.BUNNY was retired; treat any previously-saved "BUNNY" value as a DOG instead of
+// falling through to the default, so existing bunny owners don't silently lose their pet type.
+private fun parseAnimal(name: String): Animal? =
+    if (name == "BUNNY") Animal.DOG else runCatching { Animal.valueOf(name) }.getOrNull()
+
 private const val BASE_HEALTH = 80
 private const val AVOID_MINUTE_PENALTY = 2
 private const val MORE_MINUTE_BONUS = 1
@@ -85,9 +90,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     userDocRef.set(mapOf("myCode" to code), SetOptions.merge()).await()
                 }
 
-                val savedAnimal = snapshot.getString("animal")?.let { name ->
-                    runCatching { Animal.valueOf(name) }.getOrNull()
-                }
+                val savedAnimal = snapshot.getString("animal")?.let(::parseAnimal)
 
                 val savedAvoidApps = (snapshot.get("avoidApps") as? List<*>)
                     ?.filterIsInstance<String>()?.toSet() ?: uiState.avoidApps
@@ -289,9 +292,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                 val statuses = snapshot.documents.mapNotNull { doc ->
                     val code = doc.getString("myCode") ?: return@mapNotNull null
                     val ownerName = doc.getString("ownerName") ?: code
-                    val animal = doc.getString("animal")
-                        ?.let { runCatching { Animal.valueOf(it) }.getOrNull() }
-                        ?: Animal.CAT
+                    val animal = doc.getString("animal")?.let(::parseAnimal) ?: Animal.CAT
                     val health = (doc.getLong("health") ?: 80L).toInt()
                     FriendPetStatus(code = code, ownerName = ownerName, animal = animal, health = health)
                 }

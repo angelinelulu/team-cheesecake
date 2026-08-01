@@ -118,7 +118,7 @@ private fun ScatteredPet(friend: FriendPetStatus) {
         }
 
         Box(
-            modifier = Modifier.size(120.dp),
+            modifier = Modifier.size(240.dp),
             contentAlignment = Alignment.Center,
         ) {
             AnimalVisual(animal = friend.animal, health = friend.health)
@@ -132,8 +132,8 @@ private fun ScatteredPet(friend: FriendPetStatus) {
 }
 
 @Composable
-private fun AnimalVisual(animal: Animal, health: Int) {
-    val isSick = health < 20 // adjust threshold to match whatever "sick" means elsewhere in your app
+internal fun AnimalVisual(animal: Animal, health: Int, size: androidx.compose.ui.unit.Dp = 240.dp) {
+    val isSick = health < 50 // matches the happy/sad threshold used across the app
 
     val gifRes: Int? = when (animal) {
         Animal.DOG -> if (isSick) R.drawable.dog_character_sick else R.drawable.dog_character
@@ -151,7 +151,7 @@ private fun AnimalVisual(animal: Animal, health: Int) {
         Image(
             painter = rememberAsyncImagePainter(model = gifRes, imageLoader = imageLoader),
             contentDescription = animal.displayName,
-            modifier = Modifier.size(120.dp),
+            modifier = Modifier.size(size),
         )
     } else {
         Text(text = animal.emoji, style = MaterialTheme.typography.displayLarge)

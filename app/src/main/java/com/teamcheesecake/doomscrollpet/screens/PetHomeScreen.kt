@@ -38,7 +38,8 @@ import java.util.Locale
 fun PetHomeScreen(
     state: PetUiState,
     myCode: String,
-    onAddFriend: (String) -> Unit,
+    onSendFriendRequest: (String) -> Unit,
+    onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var profileMenuExpanded by remember { mutableStateOf(false) }
@@ -83,6 +84,14 @@ fun PetHomeScreen(
                             onClick = {
                                 profileMenuExpanded = false
                                 showAddFriendDialog = true
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Sign Out") },
+                            leadingIcon = { Icon(Icons.Default.AccountCircle, contentDescription = null) },
+                            onClick = {
+                                profileMenuExpanded = false
+                                onSignOut()
                             },
                         )
                     }
@@ -206,7 +215,7 @@ fun PetHomeScreen(
             myCode = myCode,
             onDismiss = { showAddFriendDialog = false },
             onSubmit = { code ->
-                onAddFriend(code)
+                onSendFriendRequest(code)
                 showAddFriendDialog = false
             },
         )
@@ -236,7 +245,7 @@ private fun AddFriendDialog(
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    text = "Share this with your friend, or enter theirs below.",
+                    text = "Share this with your friend, or enter theirs below. They'll need to accept before you're connected.",
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
                 )
@@ -253,7 +262,7 @@ private fun AddFriendDialog(
                 onClick = { onSubmit(codeInput.trim()) },
                 enabled = codeInput.isNotBlank(),
             ) {
-                Text("Add")
+                Text("Send Request")
             }
         },
         dismissButton = {

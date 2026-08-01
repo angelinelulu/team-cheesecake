@@ -215,7 +215,13 @@ fun PetHomeScreen(
                 .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
-            ActionIcon(label = "Food", iconRes = R.drawable.feed_icon, onClick = onFeedClick)
+            ActionIcon(
+                label = "Food",
+                iconRes = R.drawable.feed_icon,
+                onClick = onFeedClick,
+                boxSize = 72.dp,
+                imageSize = 56.dp,
+            )
             ActionIcon(label = "Water", iconRes = R.drawable.water_icon, onClick = onWaterClick)
             ActionIcon(
                 label = "Exercise",
@@ -249,6 +255,8 @@ fun PetHomeScreen(
                         }
                     }
                 },
+                boxSize = 72.dp,
+                imageSize = 56.dp,
             )
         }
     }
@@ -316,11 +324,17 @@ private fun AddFriendDialog(
 private fun formatKm(meters: Double): String = String.format(Locale.US, "%.2f", meters / 1000.0)
 
 @Composable
-private fun ActionIcon(label: String, iconRes: Int, onClick: () -> Unit) {
+private fun ActionIcon(
+    label: String,
+    iconRes: Int,
+    onClick: () -> Unit,
+    boxSize: androidx.compose.ui.unit.Dp = 56.dp,
+    imageSize: androidx.compose.ui.unit.Dp = 40.dp,
+) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
-                .size(72.dp)
+                .size(boxSize)
                 .clickable(onClick = onClick)
                 .background(Color.White, RoundedCornerShape(8.dp)),
             contentAlignment = Alignment.Center,
@@ -328,7 +342,7 @@ private fun ActionIcon(label: String, iconRes: Int, onClick: () -> Unit) {
             Image(
                 painter = painterResource(id = iconRes),
                 contentDescription = label,
-                modifier = Modifier.size(50.dp),
+                modifier = Modifier.size(imageSize),
             )
         }
         Text(text = label, style = MaterialTheme.typography.labelSmall)

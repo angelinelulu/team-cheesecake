@@ -7,10 +7,7 @@ enum class PetMood {
 enum class Animal(val displayName: String, val emoji: String) {
     CAT("Cat", "🐱"),
     DOG("Dog", "🐶"),
-    PANDA("Panda", "🐼"),
-    FOX("Fox", "🦊"),
-    OWL("Owl", "🦉"),
-    BUNNY("Bunny", "🐰"),
+   LIZARD("Lizard","🦎")
 }
 
 data class Friend(

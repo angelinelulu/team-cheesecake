@@ -37,7 +37,6 @@ import com.teamcheesecake.doomscrollpet.model.AVOID_APP_OPTIONS
 import com.teamcheesecake.doomscrollpet.model.MORE_APP_OPTIONS
 import com.teamcheesecake.doomscrollpet.model.PetViewModel
 import com.teamcheesecake.doomscrollpet.screens.PetHomeScreen
-import com.teamcheesecake.doomscrollpet.screens.PetParkScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.AnimalScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.AppSelectionScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.ConnectScreen
@@ -83,6 +82,11 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
     val navController = rememberNavController()
     val state = petViewModel.uiState
 
+    // Always start at SIGN_IN if there's no current user. If there IS a current
+    // user (e.g. app was force-closed and reopened), we still route through
+    // SIGN_IN's success handler logic below rather than trusting local state here,
+    // since local PetViewModel state doesn't yet reflect what's actually saved in
+    // Firestore on a cold launch.
     val startDestination = remember {
         if (FirebaseAuth.getInstance().currentUser == null) Routes.SIGN_IN else Routes.SIGN_IN
     }
@@ -181,8 +185,6 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
 
 @Composable
 private fun MainAppScreen(petViewModel: PetViewModel, onNavigateToProfile: () -> Unit) {
-    var selectedTab by remember { mutableIntStateOf(0) }
-    var showPetPark by remember { mutableStateOf(false) } {
     val state = petViewModel.uiState
     val context = LocalContext.current
 
@@ -228,32 +230,20 @@ private fun MainAppScreen(petViewModel: PetViewModel, onNavigateToProfile: () ->
     Scaffold(
         containerColor = YellowMain,
         bottomBar = {
-          if (!showPetPark) {
-                      com.teamcheesecake.doomscrollpet.screens.PetActionBottomBar(
-                          onFood = petViewModel::feedPet,
-                          onWater = petViewModel::waterPet,
-                          onExercise = petViewModel::exercisePet
-                      )
-                  }
-              },
-          ) { innerPadding ->
-              if (showPetPark) {
-                  PetParkScreen(
-                      friends = state.friends,
-                      onBack = { showPetPark = false },
-                      modifier = Modifier.padding(innerPadding),
-                  )
-              } else {
-                  PetHomeScreen(
-                      state = state,
-                      myCode = state.myCode,
-                      onSendFriendRequest = petViewModel::sendFriendRequest,
-                      onNavigateToProfile = onNavigateToProfile,
-                      onNavigateToPark = { showPetPark = true },
-                      modifier = Modifier.padding(innerPadding),
-                  )
-              }
-          }
+            com.teamcheesecake.doomscrollpet.screens.PetActionBottomBar(
+                onFood = petViewModel::feedPet,
+                onWater = petViewModel::waterPet,
+                onExercise = petViewModel::exercisePet
+            )
+        },
+    ) { innerPadding ->
+        PetHomeScreen(
+            state = state,
+            myCode = state.myCode,
+            onSendFriendRequest = petViewModel::sendFriendRequest,
+            onNavigateToProfile = onNavigateToProfile,
+            modifier = Modifier.padding(innerPadding),
+        )
     }
 }
 

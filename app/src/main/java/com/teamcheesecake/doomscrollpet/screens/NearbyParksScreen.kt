@@ -64,66 +64,71 @@ fun NearbyParksScreen(
                 Icon(Icons.Default.ArrowBack, contentDescription = "Back")
             }
 
-            // --- Board Header ---
-            Box(
-                modifier = Modifier
-                    .padding(top = 24.dp)
-                    .background(Color(0xFFDDBB88), RoundedCornerShape(12.dp))
-                    .padding(horizontal = 32.dp, vertical = 12.dp)
-                    .align(Alignment.Center),
-            ) {
-                Text(
-                    "Exercise",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF3B5D3B),
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // --- Distance Section ---
-        Text(
-            text = "Distance Covered Today: ${formatKm(state.distanceMetersToday)} km",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = PetText
-        )
-
-        if (state.distanceMetersToday < 1000) {
+            // --- Title Only ---
             Text(
-                text = "Low Distance Walked",
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color(0xFFF44336),
+                text = "Exercise",
+                style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 8.dp)
+                color = Color(0xFF3B5D3B),
+                modifier = Modifier
+                    .padding(top = 32.dp)
+                    .align(Alignment.Center)
             )
         }
 
-        Text(
-            text = "Getting fresh air makes your pet happy!",
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Bold,
-            color = PetText,
-            modifier = Modifier.padding(16.dp)
-        )
+        Spacer(modifier = Modifier.height(48.dp))
 
-        Spacer(modifier = Modifier.height(16.dp))
+        // --- Distance Section ---
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 24.dp)
+        ) {
+            Text(
+                text = "Distance Covered Today: ${formatKm(state.distanceMetersToday)} km",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = PetText,
+                textAlign = TextAlign.Center
+            )
+
+            if (state.distanceMetersToday < 1000) {
+                Text(
+                    text = "Low Distance Walked",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color(0xFFF44336),
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Getting fresh air makes your pet happy!",
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Bold,
+                color = PetText
+            )
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
 
         Text(
             text = "Suggested Parks Nearby",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = PetText,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 8.dp),
+            textAlign = TextAlign.Start
         )
 
         LazyColumn(
             modifier = Modifier.weight(1f),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             itemsIndexed(NEARBY_PARKS) { index, park ->
                 val cardColor = when (index) {

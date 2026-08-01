@@ -99,7 +99,15 @@ fun PetHomeScreen(
     var profileMenuExpanded by remember { mutableStateOf(false) }
     var showAddFriendDialog by remember { mutableStateOf(false) }
     var showPopup by remember { mutableStateOf(false) }
+    var showUnlockPopup by remember { mutableStateOf(false) }
+    var hasShownUnlockPopup by remember { mutableStateOf(false) }
 
+    LaunchedEffect(state.health) {
+        if (state.health >= 100 && !hasShownUnlockPopup) {
+            showUnlockPopup = true
+            hasShownUnlockPopup = true
+        }
+    }
     Column(modifier = modifier.fillMaxSize()) {
 
         // --- Top Bar ---
@@ -323,6 +331,28 @@ fun PetHomeScreen(
             confirmButton = {
                 TextButton(onClick = { showPopup = false }) {
                     Text("OK")
+                }
+            },
+        )
+    }
+
+    if (showUnlockPopup) {
+        AlertDialog(
+            onDismissRequest = { showUnlockPopup = false },
+            title = {
+                Text("🎉 New Pet Unlocked!")
+            },
+            text = {
+                Text(
+                    "Your pet has reached full health!\n\n" +
+                            "You've unlocked a new pet! 🐾"
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { showUnlockPopup = false }
+                ) {
+                    Text("Awesome!")
                 }
             },
         )

@@ -152,13 +152,23 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
             )
         }
         composable(Routes.MAIN) {
-            MainAppScreen(petViewModel)
+            MainAppScreen(
+                petViewModel = petViewModel,
+                onSignOut = {
+                    val context = navController.context
+                    FirebaseManager.signOut(context) {
+                        navController.navigate(Routes.SIGN_IN) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                },
+            )
         }
     }
 }
 
 @Composable
-private fun MainAppScreen(petViewModel: PetViewModel) {
+private fun MainAppScreen(petViewModel: PetViewModel, onSignOut: () -> Unit) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val state = petViewModel.uiState
     val context = LocalContext.current
@@ -220,13 +230,18 @@ private fun MainAppScreen(petViewModel: PetViewModel) {
             0 -> PetHomeScreen(
                 state = state,
                 myCode = state.myCode,
-                onAddFriend = petViewModel::addFriend,
+                onSendFriendRequest = petViewModel::sendFriendRequest,
+                onSignOut = onSignOut,
                 modifier = Modifier.padding(innerPadding),
             )
             1 -> FriendsScreen(
                 myCode = state.myCode,
                 friends = state.friends,
-                onAddFriend = petViewModel::addFriend,
+                incomingRequests = state.incomingRequests,
+                outgoingRequests = state.outgoingRequests,
+                onSendFriendRequest = petViewModel::sendFriendRequest,
+                onAcceptRequest = petViewModel::acceptFriendRequest,
+                onDeclineRequest = petViewModel::declineFriendRequest,
                 modifier = Modifier.padding(innerPadding),
             )
         }

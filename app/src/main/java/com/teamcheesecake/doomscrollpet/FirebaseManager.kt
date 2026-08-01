@@ -66,6 +66,16 @@ object FirebaseManager {
             }
     }
 
+    fun signOut(context: android.content.Context, onComplete: () -> Unit) {
+        auth.signOut()
+        val gso = com.google.android.gms.auth.api.signin.GoogleSignInOptions
+            .Builder(com.google.android.gms.auth.api.signin.GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .build()
+        com.google.android.gms.auth.api.signin.GoogleSignIn.getClient(context, gso)
+            .signOut()
+            .addOnCompleteListener { onComplete() }
+    }
+
     fun loadUserProfile(userId: String, onLoaded: (String?) -> Unit) {
         db.collection("users").document(userId)
             .get()

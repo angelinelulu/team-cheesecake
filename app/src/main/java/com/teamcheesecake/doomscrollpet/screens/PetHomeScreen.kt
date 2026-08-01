@@ -5,13 +5,23 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,7 +35,14 @@ import com.teamcheesecake.doomscrollpet.ui.theme.YellowBack
 import java.util.Locale
 
 @Composable
-fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
+fun PetHomeScreen(
+    state: PetUiState,
+    onAddFriend: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var profileMenuExpanded by remember { mutableStateOf(false) }
+    var showAddFriendDialog by remember { mutableStateOf(false) }
+
     Column(modifier = modifier.fillMaxSize()) {
 
         // --- Top bar ---
@@ -50,8 +67,24 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
                 )
-                IconButton(onClick = { /* TODO profile */ }) {
-                    Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
+
+                Box {
+                    IconButton(onClick = { profileMenuExpanded = true }) {
+                        Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
+                    }
+                    DropdownMenu(
+                        expanded = profileMenuExpanded,
+                        onDismissRequest = { profileMenuExpanded = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Add Friend") },
+                            leadingIcon = { Icon(Icons.Default.PersonAdd, contentDescription = null) },
+                            onClick = {
+                                profileMenuExpanded = false
+                                showAddFriendDialog = true
+                            },
+                        )
+                    }
                 }
             }
             Text(
@@ -166,6 +199,57 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
             ActionIcon(label = "Exercise")
         }
     }
+
+    if (showAddFriendDialog) {
+        AddFriendDialog(
+            onDismiss = { showAddFriendDialog = false },
+            onSubmit = { code ->
+                onAddFriend(code)
+                showAddFriendDialog = false
+            },
+        )
+    }
+}
+
+@Composable
+private fun AddFriendDialog(
+    onDismiss: () -> Unit,
+    onSubmit: (String) -> Unit,
+) {
+    var codeInput by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add a Friend") },
+        text = {
+            Column {
+                Text(
+                    text = "Enter your friend's code to connect your pets.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = codeInput,
+                    onValueChange = { codeInput = it },
+                    label = { Text("Friend code") },
+                    singleLine = true,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onSubmit(codeInput.trim()) },
+                enabled = codeInput.isNotBlank(),
+            ) {
+                Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+    )
 }
 
 private fun formatKm(meters: Double): String = String.format(Locale.US, "%.2f", meters / 1000.0)

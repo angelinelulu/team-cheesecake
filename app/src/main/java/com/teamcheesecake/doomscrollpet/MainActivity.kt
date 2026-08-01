@@ -2,9 +2,13 @@ package com.teamcheesecake.doomscrollpet
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -20,8 +24,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -32,29 +38,27 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.auth.FirebaseAuth
 import com.teamcheesecake.doomscrollpet.data.ProximityNotifier
 import com.teamcheesecake.doomscrollpet.model.AVOID_APP_OPTIONS
 import com.teamcheesecake.doomscrollpet.model.MORE_APP_OPTIONS
 import com.teamcheesecake.doomscrollpet.model.PetViewModel
+import com.teamcheesecake.doomscrollpet.screens.FriendsScreen
+import com.teamcheesecake.doomscrollpet.screens.NearbyParksScreen
+import com.teamcheesecake.doomscrollpet.screens.ParkScreen
 import com.teamcheesecake.doomscrollpet.screens.PetHomeScreen
+import com.teamcheesecake.doomscrollpet.screens.ProfileScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.AnimalScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.AppSelectionScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.ConnectScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.NameScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.SignInScreen
+import com.teamcheesecake.doomscrollpet.services.ScreenTimeService
 import com.teamcheesecake.doomscrollpet.ui.theme.DoomscrollPetTheme
 import com.teamcheesecake.doomscrollpet.ui.theme.YellowBack
 import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
 import kotlinx.coroutines.delay
-import com.google.firebase.auth.FirebaseAuth
-import com.teamcheesecake.doomscrollpet.screens.ProfileScreen
-import android.content.Intent
-import android.net.Uri
-import android.widget.Toast
-import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
-import com.teamcheesecake.doomscrollpet.screens.ParkScreen
-import com.teamcheesecake.doomscrollpet.screens.NearbyParksScreen
 
 private object Routes {
     const val SIGN_IN = "onboarding/signin"
@@ -64,6 +68,7 @@ private object Routes {
     const val MORE_APPS = "onboarding/more"
     const val CONNECT = "onboarding/connect"
     const val MAIN = "main"
+    const val SETTINGS_APPS = "settings/apps"
     const val PROFILE = "main/profile"
     const val PARK = "main/park"
     const val NEARBY_PARKS = "main/nearby_parks"
@@ -91,11 +96,6 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
     val navController = rememberNavController()
     val state = petViewModel.uiState
 
-    // Always start at SIGN_IN if there's no current user. If there IS a current
-    // user (e.g. app was force-closed and reopened), we still route through
-    // SIGN_IN's success handler logic below rather than trusting local state here,
-    // since local PetViewModel state doesn't yet reflect what's actually saved in
-    // Firestore on a cold launch.
     val startDestination = remember {
         if (FirebaseAuth.getInstance().currentUser == null) Routes.SIGN_IN else Routes.SIGN_IN
     }
@@ -175,6 +175,8 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
             composable(Routes.MAIN) {
                 MainAppScreen(
                     petViewModel = petViewModel,
+                    onOpenSettings = { navController.navigate(Routes.SETTINGS_APPS) },
+                    onSignOut = signOut,
                     onNavigateToProfile = { navController.navigate(Routes.PROFILE) },
                     onNavigateToPark = { navController.navigate(Routes.PARK) },
                     onNavigateToNearbyParks = { navController.navigate(Routes.NEARBY_PARKS) },
@@ -199,15 +201,30 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
             composable(Routes.NEARBY_PARKS) {
                 NearbyParksScreen(onBack = { navController.popBackStack() })
             }
+            composable(Routes.SETTINGS_APPS) {
+                AppSelectionScreen(
+                    title = "Apps to avoid",
+                    subtitle = "Time here will reduce your pet's health.",
+                    options = AVOID_APP_OPTIONS,
+                    selected = state.avoidApps,
+                    onToggle = petViewModel::toggleAvoidApp,
+                    onNext = { navController.popBackStack() },
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun MainAppScreen(        petViewModel: PetViewModel,
-                                  onNavigateToProfile: () -> Unit,
-                                  onNavigateToPark: () -> Unit,
-                                  onNavigateToNearbyParks: () -> Unit,) {
+private fun MainAppScreen(
+    petViewModel: PetViewModel,
+    onOpenSettings: () -> Unit,
+    onSignOut: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+    onNavigateToPark: () -> Unit,
+    onNavigateToNearbyParks: () -> Unit,
+) {
+    var selectedTab by remember { mutableIntStateOf(0) }
     val state = petViewModel.uiState
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -233,18 +250,34 @@ private fun MainAppScreen(        petViewModel: PetViewModel,
         }
     }
 
+    // Single setup for Overlay Permissions, Screen Time Refresh, and Background Service
+    LaunchedEffect(Unit) {
+        checkAndRequestOverlayPermission(context)
+        petViewModel.refreshScreenTime()
+
+        val serviceIntent = Intent(context, ScreenTimeService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(serviceIntent)
+        } else {
+            context.startService(serviceIntent)
+        }
+    }
+
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                petViewModel.refreshScreenTime()
+            when (event) {
+                Lifecycle.Event.ON_START -> AppVisibilityTracker.isAppInForeground = true
+                Lifecycle.Event.ON_STOP -> AppVisibilityTracker.isAppInForeground = false
+                Lifecycle.Event.ON_RESUME -> petViewModel.refreshScreenTime()
+                else -> {}
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-    LaunchedEffect(Unit) {
-        petViewModel.refreshScreenTime()
+        onDispose {
+            AppVisibilityTracker.isAppInForeground = false
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     // Note: PetHomeScreen now draws its own top bar (title + profile dropdown), so
@@ -261,14 +294,40 @@ private fun MainAppScreen(        petViewModel: PetViewModel,
             )
         },
     ) { innerPadding ->
-        PetHomeScreen(
-            state = state,
-            myCode = state.myCode,
-            onSendFriendRequest = petViewModel::sendFriendRequest,
-            onNavigateToProfile = onNavigateToProfile,
-            onNavigateToPark = onNavigateToPark,
-            modifier = Modifier.padding(innerPadding),
+        when (selectedTab) {
+            0 -> PetHomeScreen(
+                state = state,
+                myCode = state.myCode,
+                onSendFriendRequest = petViewModel::sendFriendRequest,
+                onOpenSettings = onOpenSettings,
+                onSignOut = onSignOut,
+                onNavigateToProfile = onNavigateToProfile,
+                onNavigateToPark = onNavigateToPark,
+                modifier = Modifier.padding(innerPadding),
+            )
+            1 -> FriendsScreen(
+                myCode = state.myCode,
+                friends = state.friends,
+                incomingRequests = state.incomingRequests,
+                outgoingRequests = state.outgoingRequests,
+                onSendFriendRequest = petViewModel::sendFriendRequest,
+                onAcceptRequest = petViewModel::acceptFriendRequest,
+                onDeclineRequest = petViewModel::declineFriendRequest,
+                modifier = Modifier.padding(innerPadding),
+            )
+        }
+    }
+}
+
+/** Requests 'Display over other apps' permission ONLY if not already granted. */
+private fun checkAndRequestOverlayPermission(context: Context) {
+    if (!Settings.canDrawOverlays(context)) {
+        val intent = Intent(
+            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+            Uri.parse("package:${context.packageName}"),
         )
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
     }
 }
 

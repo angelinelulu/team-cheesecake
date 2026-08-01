@@ -25,7 +25,14 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Text(text = moodEmoji(state.mood), style = MaterialTheme.typography.titleLarge)
+        if (state.ownerName.isNotBlank()) {
+            Text(
+                text = "${state.ownerName}'s ${state.animal.displayName}",
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+        }
+        Text(text = state.petEmoji, style = MaterialTheme.typography.titleLarge)
         Text(
             text = moodMessage(state),
             style = MaterialTheme.typography.bodyLarge,
@@ -44,13 +51,6 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
         Text(text = "Doomscroll today: ${state.doomscrollMinutesToday} / ${state.doomscrollLimitMinutes} min")
         Text(text = "Streak: ${state.streakDays} days")
     }
-}
-
-private fun moodEmoji(mood: PetMood): String = when (mood) {
-    PetMood.THRIVING -> "😊"
-    PetMood.OKAY -> "😐"
-    PetMood.SICK -> "🤒"
-    PetMood.CRITICAL -> "💀"
 }
 
 private fun moodMessage(state: PetUiState): String = when (state.mood) {

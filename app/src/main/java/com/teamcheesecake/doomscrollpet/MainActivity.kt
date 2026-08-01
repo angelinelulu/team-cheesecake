@@ -20,11 +20,29 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.teamcheesecake.doomscrollpet.model.AVOID_APP_OPTIONS
+import com.teamcheesecake.doomscrollpet.model.MORE_APP_OPTIONS
 import com.teamcheesecake.doomscrollpet.model.PetViewModel
 import com.teamcheesecake.doomscrollpet.screens.FriendsScreen
 import com.teamcheesecake.doomscrollpet.screens.PetHomeScreen
 import com.teamcheesecake.doomscrollpet.screens.StatsScreen
+import com.teamcheesecake.doomscrollpet.screens.onboarding.AnimalScreen
+import com.teamcheesecake.doomscrollpet.screens.onboarding.AppSelectionScreen
+import com.teamcheesecake.doomscrollpet.screens.onboarding.ConnectScreen
+import com.teamcheesecake.doomscrollpet.screens.onboarding.NameScreen
 import com.teamcheesecake.doomscrollpet.ui.theme.DoomscrollPetTheme
+
+private object Routes {
+    const val NAME = "onboarding/name"
+    const val ANIMAL = "onboarding/animal"
+    const val AVOID_APPS = "onboarding/avoid"
+    const val MORE_APPS = "onboarding/more"
+    const val CONNECT = "onboarding/connect"
+    const val MAIN = "main"
+}
 
 class MainActivity : ComponentActivity() {
 
@@ -42,6 +60,66 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun DoomscrollPetApp(petViewModel: PetViewModel) {
+    val navController = rememberNavController()
+    val state = petViewModel.uiState
+
+    NavHost(navController = navController, startDestination = Routes.NAME) {
+        composable(Routes.NAME) {
+            NameScreen(
+                name = state.ownerName,
+                onNameChange = petViewModel::setName,
+                onNext = { navController.navigate(Routes.ANIMAL) },
+            )
+        }
+        composable(Routes.ANIMAL) {
+            AnimalScreen(
+                selected = state.animal,
+                onSelect = petViewModel::selectAnimal,
+                onNext = { navController.navigate(Routes.AVOID_APPS) },
+            )
+        }
+        composable(Routes.AVOID_APPS) {
+            AppSelectionScreen(
+                title = "Apps to avoid",
+                subtitle = "Time here will make your pet sick.",
+                options = AVOID_APP_OPTIONS,
+                selected = state.avoidApps,
+                onToggle = petViewModel::toggleAvoidApp,
+                onNext = { navController.navigate(Routes.MORE_APPS) },
+            )
+        }
+        composable(Routes.MORE_APPS) {
+            AppSelectionScreen(
+                title = "Apps to do more of",
+                subtitle = "Time here will keep your pet happy and healthy.",
+                options = MORE_APP_OPTIONS,
+                selected = state.moreApps,
+                onToggle = petViewModel::toggleMoreApp,
+                onNext = { navController.navigate(Routes.CONNECT) },
+            )
+        }
+        composable(Routes.CONNECT) {
+            ConnectScreen(
+                healthConnected = state.healthAppConnected,
+                screenTimeConnected = state.screenTimeConnected,
+                onToggleHealth = { petViewModel.setHealthAppConnected(!state.healthAppConnected) },
+                onRequestScreenTimeAccess = { petViewModel.setScreenTimeConnected(true) },
+                onFinish = {
+                    petViewModel.completeOnboarding()
+                    navController.navigate(Routes.MAIN) {
+                        popUpTo(Routes.NAME) { inclusive = true }
+                    }
+                },
+            )
+        }
+        composable(Routes.MAIN) {
+            MainAppScreen(petViewModel)
+        }
+    }
+}
+
+@Composable
+private fun MainAppScreen(petViewModel: PetViewModel) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val state = petViewModel.uiState
 

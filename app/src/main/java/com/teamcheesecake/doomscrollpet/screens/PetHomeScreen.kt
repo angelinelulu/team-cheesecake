@@ -6,14 +6,23 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,40 +40,6 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import java.util.Locale
-
-@Composable
-fun TopBar(
-    title: String,
-    onProfileClick: () -> Unit,
-    onFriendsToggle: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(YellowBack)
-            .padding(bottom = 12.dp),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = { /* TODO settings */ }) {
-                Icon(Icons.Default.Settings, contentDescription = "Settings")
-            }
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-            )
-            IconButton(onClick = onFriendsToggle) {
-                Icon(Icons.Default.Group, contentDescription = "Toggle Friends")
-            }
-        }
-    }
-}
 
 @Composable
 fun PetActionBottomBar(
@@ -86,10 +61,68 @@ fun PetActionBottomBar(
 }
 
 @Composable
-fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
+fun PetHomeScreen(
+    state: PetUiState,
+    myCode: String,
+    onSendFriendRequest: (String) -> Unit,
+    onNavigateToProfile: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var profileMenuExpanded by remember { mutableStateOf(false) }
+    var showAddFriendDialog by remember { mutableStateOf(false) }
+
     Column(modifier = modifier.fillMaxSize()) {
-        // Owner name header (since TopBar is now outside)
-        if (state.ownerName.isNotBlank()) {
+
+        // --- Top bar ---
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(YellowBack)
+                .padding(bottom = 12.dp),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = { /* TODO settings */ }) {
+                    Icon(Icons.Default.Settings, contentDescription = "Settings")
+                }
+                Text(
+                    text = "SNOOT",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+
+                Box {
+                    IconButton(onClick = { profileMenuExpanded = true }) {
+                        Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
+                    }
+                    DropdownMenu(
+                        expanded = profileMenuExpanded,
+                        onDismissRequest = { profileMenuExpanded = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Add Friend") },
+                            leadingIcon = { Icon(Icons.Default.PersonAdd, contentDescription = null) },
+                            onClick = {
+                                profileMenuExpanded = false
+                                showAddFriendDialog = true
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("View Profile") },
+                            leadingIcon = { Icon(Icons.Default.AccountCircle, contentDescription = null) },
+                            onClick = {
+                                profileMenuExpanded = false
+                                onNavigateToProfile()
+                            },
+                        )
+                    }
+                }
+            }
             Text(
                 text = state.ownerName,
                 style = MaterialTheme.typography.titleMedium,
@@ -115,7 +148,7 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = "🌳", style = MaterialTheme.typography.headlineSmall)
+                    Text(text = "\uD83C\uDF33", style = MaterialTheme.typography.headlineSmall)
                     Text(text = "Pet Park", style = MaterialTheme.typography.labelSmall)
                 }
             }
@@ -158,7 +191,7 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
                 text = "Badges",
                 fontWeight = FontWeight.Bold
             )
-            
+
             if (!state.screenTimeConnected) {
                 Text(
                     text = "Not connected: screen time",
@@ -177,7 +210,7 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
                 val filledHearts = (state.health / 20).coerceIn(0, 5)
                 repeat(5) { index ->
                     Text(
-                        text = if (index < filledHearts) "❤️" else "🤍",
+                        text = if (index < filledHearts) "\u2764\uFE0F" else "\uD83E\uDD0D",
                         style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.padding(horizontal = 2.dp),
                     )
@@ -207,7 +240,6 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
                 )
             }
 
-            // Big pet display box
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -226,6 +258,65 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
             }
         }
     }
+
+    if (showAddFriendDialog) {
+        AddFriendDialog(
+            myCode = myCode,
+            onDismiss = { showAddFriendDialog = false },
+            onSubmit = { code ->
+                onSendFriendRequest(code)
+                showAddFriendDialog = false
+            },
+        )
+    }
+}
+
+@Composable
+private fun AddFriendDialog(
+    myCode: String,
+    onDismiss: () -> Unit,
+    onSubmit: (String) -> Unit,
+) {
+    var codeInput by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add a Friend") },
+        text = {
+            Column {
+                Text(text = "Your code", style = MaterialTheme.typography.labelSmall)
+                Text(
+                    text = myCode,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = "Share this with your friend, or enter theirs below. They'll need to accept before you're connected.",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+                )
+                OutlinedTextField(
+                    value = codeInput,
+                    onValueChange = { codeInput = it },
+                    label = { Text("Friend code") },
+                    singleLine = true,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onSubmit(codeInput.trim()) },
+                enabled = codeInput.isNotBlank(),
+            ) {
+                Text("Send Request")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+    )
 }
 
 private fun formatKm(meters: Double): String = String.format(Locale.US, "%.2f", meters / 1000.0)

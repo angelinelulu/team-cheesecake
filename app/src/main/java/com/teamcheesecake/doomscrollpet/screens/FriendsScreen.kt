@@ -11,13 +11,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -27,11 +23,13 @@ import com.teamcheesecake.doomscrollpet.model.Friend
 fun FriendsScreen(
     myCode: String,
     friends: List<Friend>,
-    onAddFriend: (String) -> Unit,
+    incomingRequests: List<Friend>,
+    outgoingRequests: List<Friend>,
+    onSendFriendRequest: (String) -> Unit,
+    onAcceptRequest: (String) -> Unit,
+    onDeclineRequest: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var codeInput by remember { mutableStateOf("") }
-
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -45,23 +43,44 @@ fun FriendsScreen(
             style = MaterialTheme.typography.labelSmall,
         )
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = codeInput,
-                onValueChange = { codeInput = it },
-                label = { Text("Friend's code") },
-                singleLine = true,
-                modifier = Modifier.weight(1f),
-            )
-            Button(
-                onClick = {
-                    onAddFriend(codeInput)
-                    codeInput = ""
-                },
-                enabled = codeInput.isNotBlank(),
-                modifier = Modifier.padding(start = 8.dp),
-            ) {
-                Text("Add")
+        if (incomingRequests.isNotEmpty()) {
+            Text(text = "Requests", style = MaterialTheme.typography.labelSmall)
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(incomingRequests) { request ->
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(text = request.name.ifBlank { request.code })
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedButton(onClick = { onDeclineRequest(request.code) }) {
+                                    Text("Decline")
+                                }
+                                Button(onClick = { onAcceptRequest(request.code) }) {
+                                    Text("Accept")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (outgoingRequests.isNotEmpty()) {
+            Text(text = "Pending", style = MaterialTheme.typography.labelSmall)
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(outgoingRequests) { request ->
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = "${request.name.ifBlank { request.code }} — waiting for them to accept",
+                            modifier = Modifier.padding(16.dp),
+                        )
+                    }
+                }
             }
         }
 
@@ -70,16 +89,11 @@ fun FriendsScreen(
             items(friends) { friend ->
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = "${friend.name.ifBlank { friend.code }} — ${friendStatus(friend)}",
+                        text = friend.name.ifBlank { friend.code },
                         modifier = Modifier.padding(16.dp),
                     )
                 }
             }
         }
     }
-}
-
-private fun friendStatus(friend: Friend): String {
-    val distance = friend.distanceMeters ?: return "waiting for location…"
-    return if (friend.isNearby) "nearby 📍 (${distance.toInt()}m)" else "${(distance / 1000).toInt()}km away"
 }

@@ -67,6 +67,8 @@ data class PetUiState(
     val myCode: String = "",
     val friends: List<Friend> = emptyList(),
     val badges: List<String> = emptyList(),
+    val incomingRequests: List<Friend>,
+    val outgoingRequests: List<Friend>,
 ) {
     val mood: PetMood
         get() = when {

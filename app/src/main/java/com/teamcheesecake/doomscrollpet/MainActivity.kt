@@ -217,7 +217,12 @@ private fun MainAppScreen(petViewModel: PetViewModel) {
         },
     ) { innerPadding ->
         when (selectedTab) {
-            0 -> PetHomeScreen(state = state, modifier = Modifier.padding(innerPadding))
+            0 -> PetHomeScreen(
+                state = state,
+                myCode = state.myCode,
+                onAddFriend = petViewModel::addFriend,
+                modifier = Modifier.padding(innerPadding),
+            )
             1 -> FriendsScreen(
                 myCode = state.myCode,
                 friends = state.friends,

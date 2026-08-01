@@ -13,9 +13,38 @@ A virtual pet that reacts to your phone habits.
 - Duolingo-style engagement tactics: streaks, badges.
 - Platform: started as iOS idea, now building the Android version first.
 
-## Open questions
-- Screen time source: Android `UsageStatsManager` (needs special access grant) vs. Health Connect.
-- How proximity/location ties into "time with friends" — background location has strict Android
-  policy requirements, worth scoping down for a hackathon demo (e.g. manual check-in instead of
-  continuous background tracking).
-- Backend/sharing: needs some server or realtime store if pet status is shared between friends.
+## Screen time + health (implemented)
+
+`ScreenTimeRepository` reads real per-app foreground minutes today via `UsageStatsManager`,
+scoped to the packages picked in onboarding (`avoidApps`/`moreApps`, matched by package name via
+`AppOption` in `PetState.kt` — best-effort package names for the common builds of each app, not
+verified against what's actually installed). `HealthRepository` reads today's step count via
+Health Connect. Both refresh on app resume and once on launch (`MainActivity.MainAppScreen`);
+the Connect screen's buttons do the real permission flows (usage-access settings intent,
+Health Connect's permission contract, Play Store fallback if Health Connect isn't installed).
+
+Health formula (`PetViewModel.recomputeHealth`): 80 − (doomscroll minutes × 2) + (good-app
+minutes × 1) + (steps ÷ 500) + proximity bonus, clamped 0–100. Shown on the Pet home screen along
+with today's doomscroll/good-app minutes and step count, plus which sources aren't connected yet.
+
+Open question: the app-to-package-name mapping is a guess (e.g. TikTok →
+`com.zhiliaoapp.musically`) — worth verifying against what's actually on the demo phones before
+relying on it.
+
+## Backend/sharing
+- Needs some server or realtime store if pet status is shared between friends beyond location.
+
+## Location tracking (implemented)
+
+Firestore-backed, no login — each install generates a local 6-character "friend code"
+(`DeviceIdentity`), publishes its lat/lng to `locations/{code}` in Firestore every 15s while the
+app is foregrounded (`LocationRepository`), and listens to friends' docs by code to compute
+distance. Within 100m triggers a local notification + a small pet-health bump
+(`ProximityNotifier`, `PetViewModel.addFriend`).
+
+Scoped deliberately: foreground-only (no background service/location permission), no Firebase
+Auth (Firestore is wide open — fine for a hackathon demo, must be locked down with security rules
+before this goes further), no push notifications between devices (the "nearby" alert only fires
+locally on each device that's polling, not sent to the other person).
+
+Needs a Firebase project with Firestore enabled and `app/google-services.json` in place to build.

@@ -1,11 +1,12 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("com.google.gms.google-services")
 }
 
 android {
     namespace = "com.teamcheesecake.doomscrollpet"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.teamcheesecake.doomscrollpet"
@@ -53,6 +54,18 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.7.7")
+
+    // Firestore only — just for storing/reading friend locations, no Auth/Messaging.
+    implementation(platform("com.google.firebase:firebase-bom:34.17.0"))
+    implementation("com.google.firebase:firebase-firestore")
+
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
+
+    // Health Connect — pinned to a version I know exists; if Gradle can't resolve it,
+    // check https://developer.android.com/health-and-fitness/guides/health-connect/setup
+    // for the current version and bump this (same issue we hit with the Firebase BOM).
+    implementation("androidx.health.connect:connect-client:1.1.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

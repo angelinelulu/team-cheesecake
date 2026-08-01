@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "757475054700",
+    "firebase_url": "https://team-cheesecake-default-rtdb.firebaseio.com",
+    "project_id": "team-cheesecake",
+    "storage_bucket": "team-cheesecake.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:757475054700:android:876baea9112fa4989ff449",
+        "android_client_info": {
+          "package_name": "com.teamcheesecake.doomscrollpet"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCYgRxgT3rwOKH8K4_hFxjaCSB14uAvxJc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

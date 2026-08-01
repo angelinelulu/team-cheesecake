@@ -125,13 +125,12 @@ private fun ScatteredPet(friend: FriendPetStatus) {
         }
 
         Box(
-            modifier = Modifier
-                .size(100.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color.White),
+            modifier = Modifier.size(100.dp),
             contentAlignment = Alignment.Center,
         ) {
-            AnimalVisual(animal = friend.animal)
+            AnimalVisual(animal = friend.animal, health = friend.health)
+        }
+            AnimalVisual(animal = friend.animal, health = friend.health)
         }
 
         Text(
@@ -142,26 +141,28 @@ private fun ScatteredPet(friend: FriendPetStatus) {
 }
 
 @Composable
-private fun AnimalVisual(animal: Animal) {
-    when (animal) {
-        Animal.DOG -> {
-            val context = LocalContext.current
-            val imageLoader = remember {
-                ImageLoader.Builder(context)
-                    .components { add(GifDecoder.Factory()) }
-                    .build()
-            }
-            Image(
-                painter = rememberAsyncImagePainter(
-                    model = R.drawable.dog_character,
-                    imageLoader = imageLoader,
-                ),
-                contentDescription = "Dog",
-                modifier = Modifier.size(80.dp),
-            )
+private fun AnimalVisual(animal: Animal, health: Int) {
+    val isSick = health < 20 // adjust threshold to match whatever "sick" means elsewhere in your app
+
+    val gifRes: Int? = when (animal) {
+        Animal.DOG -> if (isSick) R.drawable.dog_character_sick else R.drawable.dog_character
+        Animal.CAT -> R.drawable.cat_character // no sick variant yet — always healthy gif
+        else -> null
+    }
+
+    if (gifRes != null) {
+        val context = LocalContext.current
+        val imageLoader = remember {
+            ImageLoader.Builder(context)
+                .components { add(GifDecoder.Factory()) }
+                .build()
         }
-        else -> {
-            Text(text = animal.emoji, style = MaterialTheme.typography.displayLarge)
-        }
+        Image(
+            painter = rememberAsyncImagePainter(model = gifRes, imageLoader = imageLoader),
+            contentDescription = animal.displayName,
+            modifier = Modifier.size(80.dp),
+        )
+    } else {
+        Text(text = animal.emoji, style = MaterialTheme.typography.displayLarge)
     }
 }

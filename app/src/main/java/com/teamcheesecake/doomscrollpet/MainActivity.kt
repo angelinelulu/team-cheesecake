@@ -208,19 +208,19 @@ private fun MainAppScreen(petViewModel: PetViewModel) {
 
     Scaffold(
         containerColor = YellowMain,
+        topBar = {
+            com.teamcheesecake.doomscrollpet.screens.TopBar(
+                title = if (selectedTab == 0) "SNOOT" else "FRIENDS",
+                onProfileClick = { /* TODO */ },
+                onFriendsToggle = { selectedTab = if (selectedTab == 0) 1 else 0 }
+            )
+        },
         bottomBar = {
-            NavigationBar(containerColor = YellowBack) {
-                NavigationBarItem(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    icon = { Icon(Icons.Default.Face, contentDescription = "Pet") },
-                    label = { Text("Pet") },
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    icon = { Icon(Icons.Default.Group, contentDescription = "Friends") },
-                    label = { Text("Friends") },
+            if (selectedTab == 0) {
+                com.teamcheesecake.doomscrollpet.screens.PetActionBottomBar(
+                    onFood = petViewModel::feedPet,
+                    onWater = petViewModel::waterPet,
+                    onExercise = petViewModel::exercisePet
                 )
             }
         },

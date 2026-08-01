@@ -20,6 +20,7 @@ fun DoomscrollPetTheme(
 ) {
     MaterialTheme(
         colorScheme = LightColorScheme,
+        typography = Typography,
         content = content
     )
 }

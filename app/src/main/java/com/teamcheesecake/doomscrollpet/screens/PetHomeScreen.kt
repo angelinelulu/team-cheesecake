@@ -1,10 +1,12 @@
 package com.teamcheesecake.doomscrollpet.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,43 +27,77 @@ import com.teamcheesecake.doomscrollpet.ui.theme.YellowBack
 import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
 import com.teamcheesecake.doomscrollpet.ui.theme.ButtonGreen
 import com.teamcheesecake.doomscrollpet.ui.theme.PetText
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import java.util.Locale
+
+@Composable
+fun TopBar(
+    title: String,
+    onProfileClick: () -> Unit,
+    onFriendsToggle: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(YellowBack)
+            .padding(bottom = 12.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = { /* TODO settings */ }) {
+                Icon(Icons.Default.Settings, contentDescription = "Settings")
+            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+            )
+            IconButton(onClick = onFriendsToggle) {
+                Icon(Icons.Default.Group, contentDescription = "Toggle Friends")
+            }
+        }
+    }
+}
+
+@Composable
+fun PetActionBottomBar(
+    onFood: () -> Unit,
+    onWater: () -> Unit,
+    onExercise: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(YellowBack)
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+    ) {
+        ActionIcon(label = "Food", onClick = onFood)
+        ActionIcon(label = "Water", onClick = onWater)
+        ActionIcon(label = "Exercise", onClick = onExercise)
+    }
+}
 
 @Composable
 fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize()) {
-
-        // --- Top bar ---
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(YellowBack)
-                .padding(bottom = 12.dp),
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = { /* TODO settings */ }) {
-                    Icon(Icons.Default.Settings, contentDescription = "Settings")
-                }
-                Text(
-                    text = "SNOOT",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                )
-                IconButton(onClick = { /* TODO profile */ }) {
-                    Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
-                }
-            }
+        // Owner name header (since TopBar is now outside)
+        if (state.ownerName.isNotBlank()) {
             Text(
                 text = state.ownerName,
                 style = MaterialTheme.typography.titleMedium,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(YellowBack)
+                    .padding(bottom = 8.dp),
             )
         }
 
@@ -73,7 +109,7 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
                 .padding(16.dp)
                 .background(YellowMain),
         ) {
-            // Pet Park icon row (swap in your own icon assets here)
+            // Pet Park icon row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -86,11 +122,43 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text(text = "Doomscroll Timer: ${state.doomscrollMinutesToday} / ${state.doomscrollLimitMinutes} min")
-            Text(text = "Productivity Timer: ${state.moreAppMinutesToday} min(s)")
-            Text(text = "Distance Covered Today: ${formatKm(state.distanceMetersToday)} km")
-            Text(text = "Streak: ${state.streakDays} day(s)")
-            Text(text = "Badges")
+            Text(
+                text = buildAnnotatedString {
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                        append("Doomscroll Timer: ")
+                    }
+                    append("${state.doomscrollMinutesToday} / ${state.doomscrollLimitMinutes} min")
+                }
+            )
+            Text(
+                text = buildAnnotatedString {
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                        append("Productivity Timer: ")
+                    }
+                    append("${state.moreAppMinutesToday} min(s)")
+                }
+            )
+            Text(
+                text = buildAnnotatedString {
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                        append("Distance Covered Today: ")
+                    }
+                    append("${formatKm(state.distanceMetersToday)} km")
+                }
+            )
+            Text(
+                text = buildAnnotatedString {
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                        append("Streak: ")
+                    }
+                    append("${state.streakDays} day(s)")
+                }
+            )
+            Text(
+                text = "Badges",
+                fontWeight = FontWeight.Bold
+            )
+            
             if (!state.screenTimeConnected) {
                 Text(
                     text = "Not connected: screen time",
@@ -101,7 +169,7 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Hearts row (based on health)
+            // Hearts row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
@@ -118,7 +186,7 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Health color bar (red -> green gradient feel via progress color)
+            // Health color bar
             LinearProgressIndicator(
                 progress = { state.health / 100f },
                 modifier = Modifier
@@ -157,27 +225,17 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
                 }
             }
         }
-
-        // --- Bottom action bar ---
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(YellowBack)
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-        ) {
-            ActionIcon(label = "Food")
-            ActionIcon(label = "Water")
-            ActionIcon(label = "Exercise")
-        }
     }
 }
 
 private fun formatKm(meters: Double): String = String.format(Locale.US, "%.2f", meters / 1000.0)
 
 @Composable
-private fun ActionIcon(label: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+private fun ActionIcon(label: String, onClick: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable { onClick() }
+    ) {
         Box(
             modifier = Modifier
                 .size(56.dp)

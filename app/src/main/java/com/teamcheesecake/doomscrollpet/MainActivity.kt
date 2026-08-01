@@ -12,18 +12,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Face
-import androidx.compose.material.icons.filled.Group
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -40,7 +36,6 @@ import com.teamcheesecake.doomscrollpet.data.ProximityNotifier
 import com.teamcheesecake.doomscrollpet.model.AVOID_APP_OPTIONS
 import com.teamcheesecake.doomscrollpet.model.MORE_APP_OPTIONS
 import com.teamcheesecake.doomscrollpet.model.PetViewModel
-import com.teamcheesecake.doomscrollpet.screens.FriendsScreen
 import com.teamcheesecake.doomscrollpet.screens.PetHomeScreen
 import com.teamcheesecake.doomscrollpet.screens.PetParkScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.AnimalScreen
@@ -48,8 +43,12 @@ import com.teamcheesecake.doomscrollpet.screens.onboarding.AppSelectionScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.ConnectScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.NameScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.SignInScreen
+import com.teamcheesecake.doomscrollpet.ui.theme.DoomscrollPetTheme
+import com.teamcheesecake.doomscrollpet.ui.theme.YellowBack
+import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
 import kotlinx.coroutines.delay
 import com.google.firebase.auth.FirebaseAuth
+import com.teamcheesecake.doomscrollpet.screens.ProfileScreen
 
 private object Routes {
     const val SIGN_IN = "onboarding/signin"
@@ -59,6 +58,7 @@ private object Routes {
     const val MORE_APPS = "onboarding/more"
     const val CONNECT = "onboarding/connect"
     const val MAIN = "main"
+    const val PROFILE = "main/profile"
 }
 
 private const val LOCATION_REFRESH_INTERVAL_MS = 15_000L
@@ -71,7 +71,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         ProximityNotifier.ensureChannel(this)
         setContent {
-            DoomscrollPetApp(petViewModel)
+            DoomscrollPetTheme {
+                DoomscrollPetApp(petViewModel)
+            }
         }
     }
 }
@@ -85,88 +87,102 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
         if (FirebaseAuth.getInstance().currentUser == null) Routes.SIGN_IN else Routes.SIGN_IN
     }
 
-    NavHost(navController = navController, startDestination = startDestination) {
-        composable(Routes.SIGN_IN) {
-            SignInScreen(
-                onSignInSuccess = { uid ->
-                    FirebaseManager.getOrCreateUserProfile(uid) {
-                        FirebaseManager.getOnboardingStatus(uid) { onboardingComplete ->
-                            petViewModel.loadOrCreateAccountCode(uid)
-                            val destination = if (onboardingComplete) Routes.MAIN else Routes.NAME
-                            navController.navigate(destination) {
-                                popUpTo(Routes.SIGN_IN) { inclusive = true }
+    val signOut: () -> Unit = {
+        val context = navController.context
+        FirebaseManager.signOut(context) {
+            navController.navigate(Routes.SIGN_IN) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+
+    Surface(color = YellowBack) {
+        NavHost(navController = navController, startDestination = startDestination) {
+            composable(Routes.SIGN_IN) {
+                SignInScreen(
+                    onSignInSuccess = { uid ->
+                        FirebaseManager.getOrCreateUserProfile(uid) {
+                            FirebaseManager.getOnboardingStatus(uid) { onboardingComplete ->
+                                petViewModel.loadOrCreateAccountCode(uid)
+                                val destination = if (onboardingComplete) Routes.MAIN else Routes.NAME
+                                navController.navigate(destination) {
+                                    popUpTo(Routes.SIGN_IN) { inclusive = true }
+                                }
                             }
                         }
-                    }
-                },
-            )
-        }
-        composable(Routes.NAME) {
-            NameScreen(
-                name = state.ownerName,
-                onNameChange = petViewModel::setName,
-                onNext = { navController.navigate(Routes.ANIMAL) },
-            )
-        }
-        composable(Routes.ANIMAL) {
-            AnimalScreen(
-                selected = state.animal,
-                onSelect = petViewModel::selectAnimal,
-                onNext = { navController.navigate(Routes.AVOID_APPS) },
-            )
-        }
-        composable(Routes.AVOID_APPS) {
-            AppSelectionScreen(
-                title = "Apps to avoid",
-                subtitle = "Time here will make your pet sick.",
-                options = AVOID_APP_OPTIONS,
-                selected = state.avoidApps,
-                onToggle = petViewModel::toggleAvoidApp,
-                onNext = { navController.navigate(Routes.MORE_APPS) },
-            )
-        }
-        composable(Routes.MORE_APPS) {
-            AppSelectionScreen(
-                title = "Apps to do more of",
-                subtitle = "Time here will keep your pet happy and healthy.",
-                options = MORE_APP_OPTIONS,
-                selected = state.moreApps,
-                onToggle = petViewModel::toggleMoreApp,
-                onNext = { navController.navigate(Routes.CONNECT) },
-            )
-        }
-        composable(Routes.CONNECT) {
-            ConnectScreen(
-                screenTimeConnected = state.screenTimeConnected,
-                onCheckScreenTimeAccess = { petViewModel.refreshScreenTime() },
-                onFinish = {
-                    petViewModel.completeOnboarding()
-                    navController.navigate(Routes.MAIN) {
-                        popUpTo(Routes.AVOID_APPS) { inclusive = true }
-                    }
-                },
-            )
-        }
-        composable(Routes.MAIN) {
-            MainAppScreen(
-                petViewModel = petViewModel,
-                onSignOut = {
-                    val context = navController.context
-                    FirebaseManager.signOut(context) {
-                        navController.navigate(Routes.SIGN_IN) {
-                            popUpTo(0) { inclusive = true }
+                    },
+                )
+            }
+            composable(Routes.NAME) {
+                NameScreen(
+                    name = state.ownerName,
+                    onNameChange = petViewModel::setName,
+                    onNext = { navController.navigate(Routes.ANIMAL) },
+                )
+            }
+            composable(Routes.ANIMAL) {
+                AnimalScreen(
+                    selected = state.animal,
+                    onSelect = petViewModel::selectAnimal,
+                    onNext = { navController.navigate(Routes.AVOID_APPS) },
+                )
+            }
+            composable(Routes.AVOID_APPS) {
+                AppSelectionScreen(
+                    title = "Apps to avoid",
+                    subtitle = "Time here will make your pet sick.",
+                    options = AVOID_APP_OPTIONS,
+                    selected = state.avoidApps,
+                    onToggle = petViewModel::toggleAvoidApp,
+                    onNext = { navController.navigate(Routes.MORE_APPS) },
+                )
+            }
+            composable(Routes.MORE_APPS) {
+                AppSelectionScreen(
+                    title = "Apps to do more of",
+                    subtitle = "Time here will keep your pet happy and healthy.",
+                    options = MORE_APP_OPTIONS,
+                    selected = state.moreApps,
+                    onToggle = petViewModel::toggleMoreApp,
+                    onNext = { navController.navigate(Routes.CONNECT) },
+                )
+            }
+            composable(Routes.CONNECT) {
+                ConnectScreen(
+                    screenTimeConnected = state.screenTimeConnected,
+                    onCheckScreenTimeAccess = { petViewModel.refreshScreenTime() },
+                    onFinish = {
+                        petViewModel.completeOnboarding()
+                        navController.navigate(Routes.MAIN) {
+                            popUpTo(Routes.AVOID_APPS) { inclusive = true }
                         }
-                    }
-                },
-            )
+                    },
+                )
+            }
+            composable(Routes.MAIN) {
+                MainAppScreen(
+                    petViewModel = petViewModel,
+                    onNavigateToProfile = { navController.navigate(Routes.PROFILE) },
+                )
+            }
+            composable(Routes.PROFILE) {
+                ProfileScreen(
+                    state = state,
+                    onSendFriendRequest = petViewModel::sendFriendRequest,
+                    onAcceptRequest = petViewModel::acceptFriendRequest,
+                    onDeclineRequest = petViewModel::declineFriendRequest,
+                    onSignOut = signOut,
+                    onBack = { navController.popBackStack() },
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun MainAppScreen(petViewModel: PetViewModel, onSignOut: () -> Unit) {
+private fun MainAppScreen(petViewModel: PetViewModel, onNavigateToProfile: () -> Unit) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    var showPetPark by remember { mutableStateOf(false) }
+    var showPetPark by remember { mutableStateOf(false) } {
     val state = petViewModel.uiState
     val context = LocalContext.current
 
@@ -205,54 +221,39 @@ private fun MainAppScreen(petViewModel: PetViewModel, onSignOut: () -> Unit) {
         petViewModel.refreshScreenTime()
     }
 
+    // Note: PetHomeScreen now draws its own top bar (title + profile dropdown), so
+    // Scaffold no longer supplies a separate topBar here — that avoids stacking two
+    // top bars on screen. The friends tab/toggle was removed since friend requests
+    // are already handled from the profile menu / ProfileScreen.
     Scaffold(
+        containerColor = YellowMain,
         bottomBar = {
-            if (!showPetPark) {
-                NavigationBar {
-                    NavigationBarItem(
-                        selected = selectedTab == 0,
-                        onClick = { selectedTab = 0 },
-                        icon = { Icon(Icons.Default.Face, contentDescription = "Pet") },
-                        label = { Text("Pet") },
-                    )
-                    NavigationBarItem(
-                        selected = selectedTab == 1,
-                        onClick = { selectedTab = 1 },
-                        icon = { Icon(Icons.Default.Group, contentDescription = "Friends") },
-                        label = { Text("Friends") },
-                    )
-                }
-            }
-        },
-    ) { innerPadding ->
-        if (showPetPark) {
-            PetParkScreen(
-                friends = emptyList(),
-                onBack = { showPetPark = false },
-                modifier = Modifier.padding(innerPadding),
-            )
-        } else {
-            when (selectedTab) {
-                0 -> PetHomeScreen(
-                    state = state,
-                    myCode = state.myCode,
-                    onSendFriendRequest = petViewModel::sendFriendRequest,
-                    onSignOut = onSignOut,
-                    onNavigateToPark = { showPetPark = true },
-                    modifier = Modifier.padding(innerPadding),
-                )
-                1 -> FriendsScreen(
-                    myCode = state.myCode,
-                    friends = state.friends,
-                    incomingRequests = state.incomingRequests,
-                    outgoingRequests = state.outgoingRequests,
-                    onSendFriendRequest = petViewModel::sendFriendRequest,
-                    onAcceptRequest = petViewModel::acceptFriendRequest,
-                    onDeclineRequest = petViewModel::declineFriendRequest,
-                    modifier = Modifier.padding(innerPadding),
-                )
-            }
-        }
+          if (!showPetPark) {
+                      com.teamcheesecake.doomscrollpet.screens.PetActionBottomBar(
+                          onFood = petViewModel::feedPet,
+                          onWater = petViewModel::waterPet,
+                          onExercise = petViewModel::exercisePet
+                      )
+                  }
+              },
+          ) { innerPadding ->
+              if (showPetPark) {
+                  PetParkScreen(
+                      friends = state.friends,
+                      onBack = { showPetPark = false },
+                      modifier = Modifier.padding(innerPadding),
+                  )
+              } else {
+                  PetHomeScreen(
+                      state = state,
+                      myCode = state.myCode,
+                      onSendFriendRequest = petViewModel::sendFriendRequest,
+                      onNavigateToProfile = onNavigateToProfile,
+                      onNavigateToPark = { showPetPark = true },
+                      modifier = Modifier.padding(innerPadding),
+                  )
+              }
+          }
     }
 }
 

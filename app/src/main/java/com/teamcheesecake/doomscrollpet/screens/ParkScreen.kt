@@ -130,8 +130,6 @@ private fun ScatteredPet(friend: FriendPetStatus) {
         ) {
             AnimalVisual(animal = friend.animal, health = friend.health)
         }
-            AnimalVisual(animal = friend.animal, health = friend.health)
-        }
 
         Text(
             "${friend.ownerName}'s ${friend.animal.displayName}",

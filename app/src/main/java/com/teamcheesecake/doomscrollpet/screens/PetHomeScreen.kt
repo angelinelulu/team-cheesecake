@@ -143,7 +143,11 @@ fun PetHomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = "\uD83C\uDF33", style = MaterialTheme.typography.headlineSmall)
+                    Image(
+                        painter = painterResource(id = R.drawable.park_icon),
+                        contentDescription = "Pet Park",
+                        modifier = Modifier.size(32.dp),
+                    )
                     Text(text = "Pet Park", style = MaterialTheme.typography.labelSmall)
                 }
             }

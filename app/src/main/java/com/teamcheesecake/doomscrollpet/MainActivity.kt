@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -43,12 +42,8 @@ import com.teamcheesecake.doomscrollpet.model.MORE_APP_OPTIONS
 import com.teamcheesecake.doomscrollpet.model.PetViewModel
 import com.teamcheesecake.doomscrollpet.screens.FriendsScreen
 import com.teamcheesecake.doomscrollpet.screens.PetHomeScreen
-import com.teamcheesecake.doomscrollpet.screens.StatsScreen
-import com.teamcheesecake.doomscrollpet.screens.onboarding.AnimalScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.AppSelectionScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.ConnectScreen
-import com.teamcheesecake.doomscrollpet.screens.onboarding.NameScreen
-import com.teamcheesecake.doomscrollpet.ui.theme.DoomscrollPetTheme
 import kotlinx.coroutines.delay
 import com.teamcheesecake.doomscrollpet.screens.onboarding.SignInScreen
 import com.google.firebase.auth.ktx.auth
@@ -74,9 +69,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         ProximityNotifier.ensureChannel(this)
         setContent {
-            DoomscrollPetTheme {
-                DoomscrollPetApp(petViewModel)
-            }
+            DoomscrollPetApp(petViewModel)
         }
     }
 }
@@ -146,7 +139,7 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
                 onFinish = {
                     petViewModel.completeOnboarding()
                     navController.navigate(Routes.MAIN) {
-                        popUpTo(Routes.NAME) { inclusive = true }
+                        popUpTo(Routes.AVOID_APPS) { inclusive = true }
                     }
                 },
             )
@@ -213,12 +206,6 @@ private fun MainAppScreen(petViewModel: PetViewModel) {
                     icon = { Icon(Icons.Default.Group, contentDescription = "Friends") },
                     label = { Text("Friends") },
                 )
-                NavigationBarItem(
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 },
-                    icon = { Icon(Icons.Default.Star, contentDescription = "Stats") },
-                    label = { Text("Stats") },
-                )
             }
         },
     ) { innerPadding ->
@@ -230,7 +217,6 @@ private fun MainAppScreen(petViewModel: PetViewModel) {
                 onAddFriend = petViewModel::addFriend,
                 modifier = Modifier.padding(innerPadding),
             )
-            2 -> StatsScreen(state = state, modifier = Modifier.padding(innerPadding))
         }
     }
 }

@@ -49,6 +49,7 @@ import com.teamcheesecake.doomscrollpet.screens.onboarding.NameScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.SignInScreen
 import kotlinx.coroutines.delay
 import com.google.firebase.auth.FirebaseAuth
+import com.teamcheesecake.doomscrollpet.screens.ProfileScreen
 
 private object Routes {
     const val SIGN_IN = "onboarding/signin"
@@ -58,6 +59,7 @@ private object Routes {
     const val MORE_APPS = "onboarding/more"
     const val CONNECT = "onboarding/connect"
     const val MAIN = "main"
+    const val PROFILE = "main/profile"
 }
 
 private const val LOCATION_REFRESH_INTERVAL_MS = 15_000L
@@ -87,6 +89,15 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
     // Firestore on a cold launch.
     val startDestination = remember {
         if (FirebaseAuth.getInstance().currentUser == null) Routes.SIGN_IN else Routes.SIGN_IN
+    }
+
+    val signOut: () -> Unit = {
+        val context = navController.context
+        FirebaseManager.signOut(context) {
+            navController.navigate(Routes.SIGN_IN) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
     }
 
     NavHost(navController = navController, startDestination = startDestination) {
@@ -154,21 +165,24 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
         composable(Routes.MAIN) {
             MainAppScreen(
                 petViewModel = petViewModel,
-                onSignOut = {
-                    val context = navController.context
-                    FirebaseManager.signOut(context) {
-                        navController.navigate(Routes.SIGN_IN) {
-                            popUpTo(0) { inclusive = true }
-                        }
-                    }
-                },
+                onNavigateToProfile = { navController.navigate(Routes.PROFILE) },
+            )
+        }
+        composable(Routes.PROFILE) {
+            ProfileScreen(
+                state = state,
+                onSendFriendRequest = petViewModel::sendFriendRequest,
+                onAcceptRequest = petViewModel::acceptFriendRequest,
+                onDeclineRequest = petViewModel::declineFriendRequest,
+                onSignOut = signOut,
+                onBack = { navController.popBackStack() },
             )
         }
     }
 }
 
 @Composable
-private fun MainAppScreen(petViewModel: PetViewModel, onSignOut: () -> Unit) {
+private fun MainAppScreen(petViewModel: PetViewModel, onNavigateToProfile: () -> Unit) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val state = petViewModel.uiState
     val context = LocalContext.current
@@ -231,7 +245,7 @@ private fun MainAppScreen(petViewModel: PetViewModel, onSignOut: () -> Unit) {
                 state = state,
                 myCode = state.myCode,
                 onSendFriendRequest = petViewModel::sendFriendRequest,
-                onSignOut = onSignOut,
+                onNavigateToProfile = onNavigateToProfile,
                 modifier = Modifier.padding(innerPadding),
             )
             1 -> FriendsScreen(

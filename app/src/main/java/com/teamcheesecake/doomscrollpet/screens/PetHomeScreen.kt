@@ -39,7 +39,7 @@ fun PetHomeScreen(
     state: PetUiState,
     myCode: String,
     onSendFriendRequest: (String) -> Unit,
-    onSignOut: () -> Unit,
+    onNavigateToProfile: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var profileMenuExpanded by remember { mutableStateOf(false) }
@@ -87,11 +87,11 @@ fun PetHomeScreen(
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text("Sign Out") },
+                            text = { Text("View Profile") },
                             leadingIcon = { Icon(Icons.Default.AccountCircle, contentDescription = null) },
                             onClick = {
                                 profileMenuExpanded = false
-                                onSignOut()
+                                onNavigateToProfile()
                             },
                         )
                     }
@@ -112,7 +112,6 @@ fun PetHomeScreen(
                 .weight(1f)
                 .padding(16.dp),
         ) {
-            // Pet Park icon row (swap in your own icon assets here)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -139,7 +138,6 @@ fun PetHomeScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Hearts row (based on health)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
@@ -156,7 +154,6 @@ fun PetHomeScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Health color bar (red -> green gradient feel via progress color)
             LinearProgressIndicator(
                 progress = { state.health / 100f },
                 modifier = Modifier
@@ -177,7 +174,6 @@ fun PetHomeScreen(
                 )
             }
 
-            // Big pet display box
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -235,10 +231,7 @@ private fun AddFriendDialog(
         title = { Text("Add a Friend") },
         text = {
             Column {
-                Text(
-                    text = "Your code",
-                    style = MaterialTheme.typography.labelSmall,
-                )
+                Text(text = "Your code", style = MaterialTheme.typography.labelSmall)
                 Text(
                     text = myCode,
                     style = MaterialTheme.typography.titleMedium,

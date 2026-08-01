@@ -1,411 +1,279 @@
-package com.teamcheesecake.doomscrollpet.screens
+package com.teamcheesecake.doomscrollpet
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import com.teamcheesecake.doomscrollpet.model.PetMood
-import com.teamcheesecake.doomscrollpet.model.PetUiState
-import com.teamcheesecake.doomscrollpet.ui.theme.YellowBack
-import android.content.Intent
-import android.net.Uri
-import android.widget.Toast
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
-import kotlinx.coroutines.launch
-import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
-import com.teamcheesecake.doomscrollpet.ui.theme.ButtonGreen
-import com.teamcheesecake.doomscrollpet.ui.theme.PetText
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
-import java.util.Locale
-import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
-import com.teamcheesecake.doomscrollpet.R
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.teamcheesecake.doomscrollpet.data.ProximityNotifier
+import com.teamcheesecake.doomscrollpet.model.AVOID_APP_OPTIONS
+import com.teamcheesecake.doomscrollpet.model.MORE_APP_OPTIONS
+import com.teamcheesecake.doomscrollpet.model.PetViewModel
+import com.teamcheesecake.doomscrollpet.screens.FriendsScreen
+import com.teamcheesecake.doomscrollpet.screens.PetHomeScreen
+import com.teamcheesecake.doomscrollpet.screens.onboarding.AnimalScreen
+import com.teamcheesecake.doomscrollpet.screens.onboarding.AppSelectionScreen
+import com.teamcheesecake.doomscrollpet.screens.onboarding.ConnectScreen
+import com.teamcheesecake.doomscrollpet.screens.onboarding.NameScreen
+import com.teamcheesecake.doomscrollpet.screens.onboarding.SignInScreen
+import kotlinx.coroutines.delay
+import com.google.firebase.auth.FirebaseAuth
+import com.teamcheesecake.doomscrollpet.screens.ProfileScreen
+
+private object Routes {
+    const val SIGN_IN = "onboarding/signin"
+    const val NAME = "onboarding/name"
+    const val ANIMAL = "onboarding/animal"
+    const val AVOID_APPS = "onboarding/avoid"
+    const val MORE_APPS = "onboarding/more"
+    const val CONNECT = "onboarding/connect"
+    const val MAIN = "main"
+    const val PROFILE = "main/profile"
+}
+
+private const val LOCATION_REFRESH_INTERVAL_MS = 15_000L
+
+class MainActivity : ComponentActivity() {
+
+    private val petViewModel: PetViewModel by viewModels()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        ProximityNotifier.ensureChannel(this)
+        setContent {
+            DoomscrollPetApp(petViewModel)
+        }
+    }
+}
 
 @Composable
-fun PetHomeScreen(
-    state: PetUiState,
-    myCode: String,
-    onSendFriendRequest: (String) -> Unit,
-    onNavigateToProfile: () -> Unit,
-    onFeedClick: () -> Unit = {},
-    onWaterClick: () -> Unit = {},
-    getCurrentLocation: suspend () -> Pair<Double, Double>?,
-    modifier: Modifier = Modifier,
-) {
-    var profileMenuExpanded by remember { mutableStateOf(false) }
-    var showAddFriendDialog by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
+private fun DoomscrollPetApp(petViewModel: PetViewModel) {
+    val navController = rememberNavController()
+    val state = petViewModel.uiState
 
-    Column(modifier = modifier.fillMaxSize()) {
+    // Always start at SIGN_IN if there's no current user. If there IS a current
+    // user (e.g. app was force-closed and reopened), we still route through
+    // SIGN_IN's success handler logic below rather than trusting local state here,
+    // since local PetViewModel state doesn't yet reflect what's actually saved in
+    // Firestore on a cold launch.
+    val startDestination = remember {
+        if (FirebaseAuth.getInstance().currentUser == null) Routes.SIGN_IN else Routes.SIGN_IN
+    }
 
-        // --- Top bar ---
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(YellowBack)
-                .padding(bottom = 12.dp),
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = { /* TODO settings */ }) {
-                    Icon(Icons.Default.Settings, contentDescription = "Settings")
-                }
-                Text(
-                    text = "SNOOT",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                )
-
-                Box {
-                    IconButton(onClick = { profileMenuExpanded = true }) {
-                        Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
-                    }
-                    DropdownMenu(
-                        expanded = profileMenuExpanded,
-                        onDismissRequest = { profileMenuExpanded = false },
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Add Friend") },
-                            leadingIcon = { Icon(Icons.Default.PersonAdd, contentDescription = null) },
-                            onClick = {
-                                profileMenuExpanded = false
-                                showAddFriendDialog = true
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("View Profile") },
-                            leadingIcon = { Icon(Icons.Default.AccountCircle, contentDescription = null) },
-                            onClick = {
-                                profileMenuExpanded = false
-                                onNavigateToProfile()
-                            },
-                        )
-                    }
-                }
-            }
-            Text(
-                text = state.ownerName,
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(YellowBack)
-                    .padding(bottom = 8.dp),
-            )
-        }
-
-        // --- Middle content area ---
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .padding(16.dp)
-                .background(YellowMain),
-        ) {
-            // Pet Park icon row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = "\uD83C\uDF33", style = MaterialTheme.typography.headlineSmall)
-                    Text(text = "Pet Park", style = MaterialTheme.typography.labelSmall)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("Doomscroll Timer: ")
-                    }
-                    append("${state.doomscrollMinutesToday} / ${state.doomscrollLimitMinutes} min")
-                }
-            )
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("Productivity Timer: ")
-                    }
-                    append("${state.moreAppMinutesToday} min(s)")
-                }
-            )
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("Distance Covered Today: ")
-                    }
-                    append("${formatKm(state.distanceMetersToday)} km")
-                }
-            )
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("Streak: ")
-                    }
-                    append("${state.streakDays} day(s)")
-                }
-            )
-            Text(
-                text = "Badges",
-                fontWeight = FontWeight.Bold
-            )
-
-            if (!state.screenTimeConnected) {
-                Text(
-                    text = "Not connected: screen time",
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Hearts row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                val filledHearts = (state.health / 20).coerceIn(0, 5)
-                repeat(5) { index ->
-                    Text(
-                        text = if (index < filledHearts) "\u2764\uFE0F" else "\uD83E\uDD0D",
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(horizontal = 2.dp),
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Health color bar
-            LinearProgressIndicator(
-                progress = { state.health / 100f },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(10.dp)
-                    .clip(RoundedCornerShape(50)),
-                color = healthColor(state.health),
-                trackColor = Color.LightGray,
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (state.ownerName.isNotBlank()) {
-                Text(
-                    text = "${state.ownerName}'s ${state.animal.displayName}",
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .background(Color.LightGray, RoundedCornerShape(8.dp)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = state.petEmoji, style = MaterialTheme.typography.headlineLarge)
-                    Text(
-                        text = moodMessage(state),
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center,
-                    )
-                }
+    val signOut: () -> Unit = {
+        val context = navController.context
+        FirebaseManager.signOut(context) {
+            navController.navigate(Routes.SIGN_IN) {
+                popUpTo(0) { inclusive = true }
             }
         }
+    }
 
-        // --- Bottom action bar ---
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(YellowBack)
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-        ) {
-            ActionIcon(
-                label = "Food",
-                iconRes = R.drawable.feed_icon,
-                onClick = onFeedClick,
-                boxSize = 72.dp,
-                imageSize = 56.dp,
-            )
-            ActionIcon(label = "Water", iconRes = R.drawable.water_icon, onClick = onWaterClick)
-            ActionIcon(
-                label = "Exercise",
-                iconRes = R.drawable.exercise_icon,
-                onClick = {
-                    scope.launch {
-                        val latLng = getCurrentLocation()
-                        if (latLng == null) {
-                            Toast.makeText(
-                                context,
-                                "Couldn't get your location — check location permission",
-                                Toast.LENGTH_SHORT,
-                            ).show()
-                            return@launch
-                        }
-                        val (lat, lng) = latLng
-                        val mapsIntent = Intent(
-                            Intent.ACTION_VIEW,
-                            Uri.parse("geo:$lat,$lng?q=parks+near+me"),
-                        ).apply { setPackage("com.google.android.apps.maps") }
-
-                        if (mapsIntent.resolveActivity(context.packageManager) != null) {
-                            context.startActivity(mapsIntent)
-                        } else {
-                            context.startActivity(
-                                Intent(
-                                    Intent.ACTION_VIEW,
-                                    Uri.parse("https://www.google.com/maps/search/parks/@$lat,$lng,14z"),
-                                ),
-                            )
+    NavHost(navController = navController, startDestination = startDestination) {
+        composable(Routes.SIGN_IN) {
+            SignInScreen(
+                onSignInSuccess = { uid ->
+                    FirebaseManager.getOrCreateUserProfile(uid) {
+                        FirebaseManager.getOnboardingStatus(uid) { onboardingComplete ->
+                            petViewModel.loadOrCreateAccountCode(uid)
+                            val destination = if (onboardingComplete) Routes.MAIN else Routes.NAME
+                            navController.navigate(destination) {
+                                popUpTo(Routes.SIGN_IN) { inclusive = true }
+                            }
                         }
                     }
                 },
-                boxSize = 72.dp,
-                imageSize = 56.dp,
             )
         }
-    }
-
-    if (showAddFriendDialog) {
-        AddFriendDialog(
-            myCode = myCode,
-            onDismiss = { showAddFriendDialog = false },
-            onSubmit = { code ->
-                onSendFriendRequest(code)
-                showAddFriendDialog = false
-            },
-        )
+        composable(Routes.NAME) {
+            NameScreen(
+                name = state.ownerName,
+                onNameChange = petViewModel::setName,
+                onNext = { navController.navigate(Routes.ANIMAL) },
+            )
+        }
+        composable(Routes.ANIMAL) {
+            AnimalScreen(
+                selected = state.animal,
+                onSelect = petViewModel::selectAnimal,
+                onNext = { navController.navigate(Routes.AVOID_APPS) },
+            )
+        }
+        composable(Routes.AVOID_APPS) {
+            AppSelectionScreen(
+                title = "Apps to avoid",
+                subtitle = "Time here will make your pet sick.",
+                options = AVOID_APP_OPTIONS,
+                selected = state.avoidApps,
+                onToggle = petViewModel::toggleAvoidApp,
+                onNext = { navController.navigate(Routes.MORE_APPS) },
+            )
+        }
+        composable(Routes.MORE_APPS) {
+            AppSelectionScreen(
+                title = "Apps to do more of",
+                subtitle = "Time here will keep your pet happy and healthy.",
+                options = MORE_APP_OPTIONS,
+                selected = state.moreApps,
+                onToggle = petViewModel::toggleMoreApp,
+                onNext = { navController.navigate(Routes.CONNECT) },
+            )
+        }
+        composable(Routes.CONNECT) {
+            ConnectScreen(
+                screenTimeConnected = state.screenTimeConnected,
+                onCheckScreenTimeAccess = { petViewModel.refreshScreenTime() },
+                onFinish = {
+                    petViewModel.completeOnboarding()
+                    navController.navigate(Routes.MAIN) {
+                        popUpTo(Routes.AVOID_APPS) { inclusive = true }
+                    }
+                },
+            )
+        }
+        composable(Routes.MAIN) {
+            MainAppScreen(
+                petViewModel = petViewModel,
+                onNavigateToProfile = { navController.navigate(Routes.PROFILE) },
+            )
+        }
+        composable(Routes.PROFILE) {
+            ProfileScreen(
+                state = state,
+                onSendFriendRequest = petViewModel::sendFriendRequest,
+                onAcceptRequest = petViewModel::acceptFriendRequest,
+                onDeclineRequest = petViewModel::declineFriendRequest,
+                onSignOut = signOut,
+                onBack = { navController.popBackStack() },
+            )
+        }
     }
 }
 
 @Composable
-private fun AddFriendDialog(
-    myCode: String,
-    onDismiss: () -> Unit,
-    onSubmit: (String) -> Unit,
-) {
-    var codeInput by remember { mutableStateOf("") }
+private fun MainAppScreen(petViewModel: PetViewModel, onNavigateToProfile: () -> Unit) {
+    var selectedTab by remember { mutableIntStateOf(0) }
+    val state = petViewModel.uiState
+    val context = LocalContext.current
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Add a Friend") },
-        text = {
-            Column {
-                Text(text = "Your code", style = MaterialTheme.typography.labelSmall)
-                Text(
-                    text = myCode,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+    var locationPermissionGranted by remember { mutableStateOf(hasLocationPermission(context)) }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+    ) { results ->
+        locationPermissionGranted = results[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                results[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+    }
+
+    LaunchedEffect(Unit) {
+        if (!hasLocationPermission(context)) {
+            permissionLauncher.launch(locationPermissions())
+        }
+    }
+
+    LaunchedEffect(locationPermissionGranted) {
+        while (locationPermissionGranted) {
+            petViewModel.refreshMyLocation()
+            delay(LOCATION_REFRESH_INTERVAL_MS)
+        }
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                petViewModel.refreshScreenTime()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(Unit) {
+        petViewModel.refreshScreenTime()
+    }
+
+    Scaffold(
+        bottomBar = {
+            NavigationBar {
+                NavigationBarItem(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    icon = { Icon(Icons.Default.Face, contentDescription = "Pet") },
+                    label = { Text("Pet") },
                 )
-                Text(
-                    text = "Share this with your friend, or enter theirs below. They'll need to accept before you're connected.",
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
-                )
-                OutlinedTextField(
-                    value = codeInput,
-                    onValueChange = { codeInput = it },
-                    label = { Text("Friend code") },
-                    singleLine = true,
+                NavigationBarItem(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    icon = { Icon(Icons.Default.Group, contentDescription = "Friends") },
+                    label = { Text("Friends") },
                 )
             }
         },
-        confirmButton = {
-            TextButton(
-                onClick = { onSubmit(codeInput.trim()) },
-                enabled = codeInput.isNotBlank(),
-            ) {
-                Text("Send Request")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        },
+    ) { innerPadding ->
+        when (selectedTab) {
+            0 -> PetHomeScreen(
+                state = state,
+                myCode = state.myCode,
+                onSendFriendRequest = petViewModel::sendFriendRequest,
+                onNavigateToProfile = onNavigateToProfile,
+                getCurrentLocation = petViewModel::getCurrentLocation,
+                modifier = Modifier.padding(innerPadding),
+            )
+            1 -> FriendsScreen(
+                myCode = state.myCode,
+                friends = state.friends,
+                incomingRequests = state.incomingRequests,
+                outgoingRequests = state.outgoingRequests,
+                onSendFriendRequest = petViewModel::sendFriendRequest,
+                onAcceptRequest = petViewModel::acceptFriendRequest,
+                onDeclineRequest = petViewModel::declineFriendRequest,
+                modifier = Modifier.padding(innerPadding),
+            )
+        }
+    }
+}
+
+private fun hasLocationPermission(context: Context): Boolean =
+    ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
+
+private fun locationPermissions(): Array<String> {
+    val permissions = mutableListOf(
+        Manifest.permission.ACCESS_FINE_LOCATION,
+        Manifest.permission.ACCESS_COARSE_LOCATION,
     )
-}
-
-private fun formatKm(meters: Double): String = String.format(Locale.US, "%.2f", meters / 1000.0)
-
-@Composable
-private fun ActionIcon(
-    label: String,
-    iconRes: Int,
-    onClick: () -> Unit,
-    boxSize: androidx.compose.ui.unit.Dp = 56.dp,
-    imageSize: androidx.compose.ui.unit.Dp = 40.dp,
-) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier = Modifier
-                .size(boxSize)
-                .clickable(onClick = onClick)
-                .background(Color.White, RoundedCornerShape(8.dp)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Image(
-                painter = painterResource(id = iconRes),
-                contentDescription = label,
-                modifier = Modifier.size(imageSize),
-            )
-        }
-        Text(text = label, style = MaterialTheme.typography.labelSmall)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        permissions += Manifest.permission.POST_NOTIFICATIONS
     }
-}
-
-private fun healthColor(health: Int): Color = when {
-    health >= 80 -> Color(0xFF4CAF50)
-    health >= 60 -> Color(0xFF8BC34A)
-    health >= 40 -> Color(0xFFFFC107)
-    health >= 20 -> Color(0xFFFF9800)
-    else -> Color(0xFFF44336)
-}
-
-private fun moodMessage(state: PetUiState): String = when (state.mood) {
-    PetMood.THRIVING -> "Your pet is thriving! Keep it up."
-    PetMood.OKAY -> "Your pet is doing okay. Take a break soon."
-    PetMood.SICK -> "Your pet is getting sick from all the scrolling..."
-    PetMood.CRITICAL -> "Your pet is really sick! Put the phone down."
+    return permissions.toTypedArray()
 }

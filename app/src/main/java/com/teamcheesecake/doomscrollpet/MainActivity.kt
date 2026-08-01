@@ -1,8 +1,14 @@
 package com.teamcheesecake.doomscrollpet
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -15,14 +21,23 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.teamcheesecake.doomscrollpet.data.ProximityNotifier
 import com.teamcheesecake.doomscrollpet.model.AVOID_APP_OPTIONS
 import com.teamcheesecake.doomscrollpet.model.MORE_APP_OPTIONS
 import com.teamcheesecake.doomscrollpet.model.PetViewModel
@@ -34,6 +49,7 @@ import com.teamcheesecake.doomscrollpet.screens.onboarding.AppSelectionScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.ConnectScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.NameScreen
 import com.teamcheesecake.doomscrollpet.ui.theme.DoomscrollPetTheme
+import kotlinx.coroutines.delay
 
 private object Routes {
     const val NAME = "onboarding/name"
@@ -44,12 +60,15 @@ private object Routes {
     const val MAIN = "main"
 }
 
+private const val LOCATION_REFRESH_INTERVAL_MS = 15_000L
+
 class MainActivity : ComponentActivity() {
 
     private val petViewModel: PetViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ProximityNotifier.ensureChannel(this)
         setContent {
             DoomscrollPetTheme {
                 DoomscrollPetApp(petViewModel)
@@ -102,8 +121,10 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
             ConnectScreen(
                 healthConnected = state.healthAppConnected,
                 screenTimeConnected = state.screenTimeConnected,
-                onToggleHealth = { petViewModel.setHealthAppConnected(!state.healthAppConnected) },
-                onRequestScreenTimeAccess = { petViewModel.setScreenTimeConnected(true) },
+                healthConnectAvailable = petViewModel.isHealthConnectAvailable(),
+                healthPermissions = petViewModel.healthConnectPermissions,
+                onCheckScreenTimeAccess = { petViewModel.refreshScreenTime() },
+                onHealthPermissionsResult = { petViewModel.refreshHealthConnect() },
                 onFinish = {
                     petViewModel.completeOnboarding()
                     navController.navigate(Routes.MAIN) {
@@ -122,6 +143,44 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
 private fun MainAppScreen(petViewModel: PetViewModel) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val state = petViewModel.uiState
+    val context = LocalContext.current
+
+    var locationPermissionGranted by remember { mutableStateOf(hasLocationPermission(context)) }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+    ) { results ->
+        locationPermissionGranted = results[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            results[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+    }
+
+    LaunchedEffect(Unit) {
+        if (!hasLocationPermission(context)) {
+            permissionLauncher.launch(locationPermissions())
+        }
+    }
+
+    LaunchedEffect(locationPermissionGranted) {
+        while (locationPermissionGranted) {
+            petViewModel.refreshMyLocation()
+            delay(LOCATION_REFRESH_INTERVAL_MS)
+        }
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                petViewModel.refreshScreenTime()
+                petViewModel.refreshHealthConnect()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(Unit) {
+        petViewModel.refreshScreenTime()
+        petViewModel.refreshHealthConnect()
+    }
 
     Scaffold(
         bottomBar = {
@@ -149,8 +208,28 @@ private fun MainAppScreen(petViewModel: PetViewModel) {
     ) { innerPadding ->
         when (selectedTab) {
             0 -> PetHomeScreen(state = state, modifier = Modifier.padding(innerPadding))
-            1 -> FriendsScreen(friends = state.friends, modifier = Modifier.padding(innerPadding))
+            1 -> FriendsScreen(
+                myCode = state.myCode,
+                friends = state.friends,
+                onAddFriend = petViewModel::addFriend,
+                modifier = Modifier.padding(innerPadding),
+            )
             2 -> StatsScreen(state = state, modifier = Modifier.padding(innerPadding))
         }
     }
+}
+
+private fun hasLocationPermission(context: Context): Boolean =
+    ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
+        PackageManager.PERMISSION_GRANTED
+
+private fun locationPermissions(): Array<String> {
+    val permissions = mutableListOf(
+        Manifest.permission.ACCESS_FINE_LOCATION,
+        Manifest.permission.ACCESS_COARSE_LOCATION,
+    )
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        permissions += Manifest.permission.POST_NOTIFICATIONS
+    }
+    return permissions.toTypedArray()
 }

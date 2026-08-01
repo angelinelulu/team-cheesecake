@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "523208131785",
+    "project_id": "snoot-95d75",
+    "storage_bucket": "snoot-95d75.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:523208131785:android:e4c24af17160e305227918",
+        "android_client_info": {
+          "package_name": "com.teamcheesecake.doomscrollpet"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBBIBdpgWkxqSSrL2sqmTBciCwh_yhNWIE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

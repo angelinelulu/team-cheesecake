@@ -4,8 +4,10 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -51,7 +53,6 @@ import com.teamcheesecake.doomscrollpet.screens.onboarding.NameScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.SignInScreen
 import com.teamcheesecake.doomscrollpet.services.ScreenTimeService
 import kotlinx.coroutines.delay
-import kotlin.jvm.java
 
 private object Routes {
     const val SIGN_IN = "onboarding/signin"
@@ -162,10 +163,8 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
                         }
                     }
                 },
-
             )
         }
-
         composable(Routes.SETTINGS_APPS) {
             AppSelectionScreen(
                 title = "Apps to avoid",
@@ -173,7 +172,7 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
                 options = AVOID_APP_OPTIONS,
                 selected = state.avoidApps,
                 onToggle = petViewModel::toggleAvoidApp,
-                onNext = { navController.popBackStack() }, // Goes back to main screen when done
+                onNext = { navController.popBackStack() },
             )
         }
     }
@@ -183,7 +182,8 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
 private fun MainAppScreen(
     petViewModel: PetViewModel,
     onOpenSettings: () -> Unit,
-    onSignOut: () -> Unit) {
+    onSignOut: () -> Unit,
+) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val state = petViewModel.uiState
     val context = LocalContext.current
@@ -209,7 +209,11 @@ private fun MainAppScreen(
         }
     }
 
+    // Single setup for Overlay Permissions, Screen Time Refresh, and Background Service
     LaunchedEffect(Unit) {
+        checkAndRequestOverlayPermission(context)
+        petViewModel.refreshScreenTime()
+
         val serviceIntent = Intent(context, ScreenTimeService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(serviceIntent)
@@ -232,20 +236,6 @@ private fun MainAppScreen(
         onDispose {
             AppVisibilityTracker.isAppInForeground = false
             lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        petViewModel.refreshScreenTime()
-    }
-
-    // Start the background service when reaching the main screen
-    LaunchedEffect(Unit) {
-        val intent = Intent(context, ScreenTimeService::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.startForegroundService(intent)
-        } else {
-            context.startService(intent)
         }
     }
 
@@ -274,7 +264,6 @@ private fun MainAppScreen(
                 onSendFriendRequest = petViewModel::sendFriendRequest,
                 onOpenSettings = onOpenSettings,
                 onSignOut = onSignOut,
-//                onUpdateDoomscrollMinutes = petViewModel::setDoomscrollMinutes,
                 modifier = Modifier.padding(innerPadding),
             )
             1 -> FriendsScreen(
@@ -288,6 +277,18 @@ private fun MainAppScreen(
                 modifier = Modifier.padding(innerPadding),
             )
         }
+    }
+}
+
+/** Requests 'Display over other apps' permission ONLY if not already granted. */
+private fun checkAndRequestOverlayPermission(context: Context) {
+    if (!Settings.canDrawOverlays(context)) {
+        val intent = Intent(
+            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+            Uri.parse("package:${context.packageName}"),
+        )
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
     }
 }
 

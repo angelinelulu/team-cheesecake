@@ -14,8 +14,10 @@ import com.teamcheesecake.doomscrollpet.data.DeviceIdentity
 import com.teamcheesecake.doomscrollpet.data.FriendRepository
 import com.teamcheesecake.doomscrollpet.data.LocationRepository
 import com.teamcheesecake.doomscrollpet.data.ScreenTimeRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 private const val BASE_HEALTH = 80
 private const val AVOID_MINUTE_PENALTY = 2
@@ -48,6 +50,24 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     )
         private set
 
+    // Package name mapping for common apps
+    private val appPackageMapping = mapOf(
+        "YouTube" to "com.google.android.youtube",
+        "Instagram" to "com.instagram.android",
+        "TikTok" to "com.zhiliaoapp.musically",
+        "Twitter" to "com.twitter.android",
+        "X" to "com.twitter.android",
+        "Facebook" to "com.facebook.katana",
+        "Reddit" to "com.reddit.frontpage",
+        "Snapchat" to "com.snapchat.android"
+    )
+
+    private fun Set<String>.toPackageNames(): Set<String> {
+        return this.map { appName ->
+            appPackageMapping[appName] ?: appName // Use mapped package name if available
+        }.toSet()
+    }
+
     // --- Onboarding & Profile Loading ---
 
     fun loadOrCreateAccountCode(userId: String) {
@@ -75,7 +95,6 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                 val savedDoomscroll = (snapshot.getLong("doomscrollMinutesToday") ?: 0L).toInt()
                 val savedMoreApp = (snapshot.getLong("moreAppMinutesToday") ?: 0L).toInt()
 
-                // Immediately populate UI state directly from Firestore snapshot
                 uiState = uiState.copy(
                     myCode = code,
                     ownerName = snapshot.getString("ownerName") ?: uiState.ownerName,
@@ -92,7 +111,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
 
                 isAccountLoaded = true
                 recomputeHealth()
-                refreshScreenTime() // Safe to check local device time now
+                refreshScreenTime()
                 startListeningToFriendLinks()
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load or create account code", e)
@@ -153,25 +172,27 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     // --- Screen Time & Health ---
 
     fun refreshScreenTime() {
-        // Prevent clearing database stats before profile finishes loading
         if (!isAccountLoaded || !screenTimeRepository.hasUsageAccess()) {
             uiState = uiState.copy(screenTimeConnected = screenTimeRepository.hasUsageAccess())
             return
         }
 
-        val avoidMinutes = screenTimeRepository.getTodayUsageMinutes(uiState.avoidApps).values.sum().toInt()
-        val moreMinutes = screenTimeRepository.getTodayUsageMinutes(uiState.moreApps).values.sum().toInt()
+        viewModelScope.launch(Dispatchers.IO) {
+            val avoidPackages = uiState.avoidApps.toPackageNames()
+            val morePackages = uiState.moreApps.toPackageNames()
 
-        // Use maxOf to ensure saved time is preserved while local device time catches up
-        val updatedDoomscroll = maxOf(uiState.doomscrollMinutesToday, avoidMinutes)
-        val updatedMoreApp = maxOf(uiState.moreAppMinutesToday, moreMinutes)
+            val avoidMinutes = screenTimeRepository.getTodayUsageMinutes(avoidPackages).values.sum().toInt()
+            val moreMinutes = screenTimeRepository.getTodayUsageMinutes(morePackages).values.sum().toInt()
 
-        uiState = uiState.copy(
-            doomscrollMinutesToday = updatedDoomscroll,
-            moreAppMinutesToday = updatedMoreApp,
-            screenTimeConnected = true,
-        )
-        recomputeHealth()
+            withContext(Dispatchers.Main) {
+                uiState = uiState.copy(
+                    doomscrollMinutesToday = avoidMinutes,
+                    moreAppMinutesToday = moreMinutes,
+                    screenTimeConnected = true,
+                )
+                recomputeHealth()
+            }
+        }
     }
 
     private fun recomputeHealth() {

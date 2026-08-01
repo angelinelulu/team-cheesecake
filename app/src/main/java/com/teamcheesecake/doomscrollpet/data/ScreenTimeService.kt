@@ -104,8 +104,8 @@ class ScreenTimeService : Service() {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(2002, builder.build())
 
-        // Force open full screen window if "Display over other apps" permission is granted
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(this)) {
+        // Direct launch over other apps when overlay permission is granted
+        if (Settings.canDrawOverlays(this)) {
             startActivity(intent)
         }
     }

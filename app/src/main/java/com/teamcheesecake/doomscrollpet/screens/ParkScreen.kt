@@ -41,7 +41,9 @@ fun ParkScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var selectedFriend by remember { mutableStateOf<FriendPetStatus?>(null) }
+    var selectedFriendCode by remember { mutableStateOf<String?>(null) }
+    val selectedFriend = friendPetStatuses.firstOrNull { it.code == selectedFriendCode }
+
     Box(modifier = modifier.fillMaxSize()) {
         // --- Full-screen background scene ---
         Image(
@@ -100,7 +102,7 @@ fun ParkScreen(
                 horizontalArrangement = Arrangement.spacedBy(20.dp),
             ) {
                 items(friendPetStatuses) { friend ->
-                    ScatteredPet(friend, onClick = { selectedFriend = friend })
+                    ScatteredPet(friend, onClick = { selectedFriendCode = friend.code })
                 }
             }
         }
@@ -109,7 +111,7 @@ fun ParkScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = 0.6f))
-                    .clickable(onClick = { selectedFriend = null }),
+                    .clickable(onClick = { selectedFriendCode = null }),
                 contentAlignment = Alignment.Center,
             ) {
                 Card(

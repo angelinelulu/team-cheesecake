@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -23,8 +24,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -40,27 +43,22 @@ import com.teamcheesecake.doomscrollpet.data.ProximityNotifier
 import com.teamcheesecake.doomscrollpet.model.AVOID_APP_OPTIONS
 import com.teamcheesecake.doomscrollpet.model.MORE_APP_OPTIONS
 import com.teamcheesecake.doomscrollpet.model.PetViewModel
+import com.teamcheesecake.doomscrollpet.screens.FriendsScreen
+import com.teamcheesecake.doomscrollpet.screens.NearbyParksScreen
+import com.teamcheesecake.doomscrollpet.screens.ParkScreen
 import com.teamcheesecake.doomscrollpet.screens.PetHomeScreen
+import com.teamcheesecake.doomscrollpet.screens.ProfileScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.AnimalScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.AppSelectionScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.ConnectScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.NameScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.SignInScreen
 import com.teamcheesecake.doomscrollpet.services.ScreenTimeService
-import kotlinx.coroutines.delay
 import com.teamcheesecake.doomscrollpet.ui.theme.DoomscrollPetTheme
 import com.teamcheesecake.doomscrollpet.ui.theme.YellowBack
 import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
 import kotlinx.coroutines.delay
-import com.google.firebase.auth.FirebaseAuth
-import com.teamcheesecake.doomscrollpet.screens.ProfileScreen
-import android.content.Intent
-import android.net.Uri
-import android.widget.Toast
-import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
-import com.teamcheesecake.doomscrollpet.screens.ParkScreen
-import com.teamcheesecake.doomscrollpet.screens.NearbyParksScreen
 
 private object Routes {
     const val SIGN_IN = "onboarding/signin"
@@ -125,66 +123,65 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
                                 }
                             }
                         }
-                    }
-                },
-            )
-        }
-        composable(Routes.NAME) {
-            NameScreen(
-                name = state.ownerName,
-                onNameChange = petViewModel::setName,
-                onNext = { navController.navigate(Routes.ANIMAL) },
-            )
-        }
-        composable(Routes.ANIMAL) {
-            AnimalScreen(
-                selected = state.animal,
-                onSelect = petViewModel::selectAnimal,
-                onNext = { navController.navigate(Routes.AVOID_APPS) },
-            )
-        }
-        composable(Routes.AVOID_APPS) {
-            AppSelectionScreen(
-                title = "Apps to avoid",
-                subtitle = "Time here will make your pet sick.",
-                options = AVOID_APP_OPTIONS,
-                selected = state.avoidApps,
-                onToggle = petViewModel::toggleAvoidApp,
-                onNext = { navController.navigate(Routes.MORE_APPS) },
-            )
-        }
-        composable(Routes.MORE_APPS) {
-            AppSelectionScreen(
-                title = "Apps to do more of",
-                subtitle = "Time here will keep your pet happy and healthy.",
-                options = MORE_APP_OPTIONS,
-                selected = state.moreApps,
-                onToggle = petViewModel::toggleMoreApp,
-                onNext = { navController.navigate(Routes.CONNECT) },
-            )
-        }
-        composable(Routes.CONNECT) {
-            ConnectScreen(
-                screenTimeConnected = state.screenTimeConnected,
-                onCheckScreenTimeAccess = { petViewModel.refreshScreenTime() },
-                onFinish = {
-                    petViewModel.completeOnboarding()
-                    navController.navigate(Routes.MAIN) {
-                        popUpTo(Routes.AVOID_APPS) { inclusive = true }
-                    }
-                },
-            )
-        }
-        composable(Routes.MAIN) {
-            MainAppScreen(
-                petViewModel = petViewModel,
-                onOpenSettings = { navController.navigate(Routes.SETTINGS_APPS) },
-                onSignOut = signOut,
-                onNavigateToProfile = { navController.navigate(Routes.PROFILE) },
-                onNavigateToPark = { navController.navigate(Routes.PARK) },
-                onNavigateToNearbyParks = { navController.navigate(Routes.NEARBY_PARKS) },
-            )
-        } 
+                    },
+                )
+            }
+            composable(Routes.NAME) {
+                NameScreen(
+                    name = state.ownerName,
+                    onNameChange = petViewModel::setName,
+                    onNext = { navController.navigate(Routes.ANIMAL) },
+                )
+            }
+            composable(Routes.ANIMAL) {
+                AnimalScreen(
+                    selected = state.animal,
+                    onSelect = petViewModel::selectAnimal,
+                    onNext = { navController.navigate(Routes.AVOID_APPS) },
+                )
+            }
+            composable(Routes.AVOID_APPS) {
+                AppSelectionScreen(
+                    title = "Apps to avoid",
+                    subtitle = "Time here will make your pet sick.",
+                    options = AVOID_APP_OPTIONS,
+                    selected = state.avoidApps,
+                    onToggle = petViewModel::toggleAvoidApp,
+                    onNext = { navController.navigate(Routes.MORE_APPS) },
+                )
+            }
+            composable(Routes.MORE_APPS) {
+                AppSelectionScreen(
+                    title = "Apps to do more of",
+                    subtitle = "Time here will keep your pet happy and healthy.",
+                    options = MORE_APP_OPTIONS,
+                    selected = state.moreApps,
+                    onToggle = petViewModel::toggleMoreApp,
+                    onNext = { navController.navigate(Routes.CONNECT) },
+                )
+            }
+            composable(Routes.CONNECT) {
+                ConnectScreen(
+                    screenTimeConnected = state.screenTimeConnected,
+                    onCheckScreenTimeAccess = { petViewModel.refreshScreenTime() },
+                    onFinish = {
+                        petViewModel.completeOnboarding()
+                        navController.navigate(Routes.MAIN) {
+                            popUpTo(Routes.AVOID_APPS) { inclusive = true }
+                        }
+                    },
+                )
+            }
+            composable(Routes.MAIN) {
+                MainAppScreen(
+                    petViewModel = petViewModel,
+                    onOpenSettings = { navController.navigate(Routes.SETTINGS_APPS) },
+                    onSignOut = signOut,
+                    onNavigateToProfile = { navController.navigate(Routes.PROFILE) },
+                    onNavigateToPark = { navController.navigate(Routes.PARK) },
+                    onNavigateToNearbyParks = { navController.navigate(Routes.NEARBY_PARKS) },
+                )
+            }
             composable(Routes.PROFILE) {
                 ProfileScreen(
                     state = state,
@@ -204,21 +201,20 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
             composable(Routes.NEARBY_PARKS) {
                 NearbyParksScreen(onBack = { navController.popBackStack() })
             }
-        }
-        composable(Routes.SETTINGS_APPS) {
-            AppSelectionScreen(
-                title = "Apps to avoid",
-                subtitle = "Time here will reduce your pet's health.",
-                options = AVOID_APP_OPTIONS,
-                selected = state.avoidApps,
-                onToggle = petViewModel::toggleAvoidApp,
-                onNext = { navController.popBackStack() },
-            )
+            composable(Routes.SETTINGS_APPS) {
+                AppSelectionScreen(
+                    title = "Apps to avoid",
+                    subtitle = "Time here will reduce your pet's health.",
+                    options = AVOID_APP_OPTIONS,
+                    selected = state.avoidApps,
+                    onToggle = petViewModel::toggleAvoidApp,
+                    onNext = { navController.popBackStack() },
+                )
+            }
         }
     }
 }
 
-@Composable
 @Composable
 private fun MainAppScreen(
     petViewModel: PetViewModel,

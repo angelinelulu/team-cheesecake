@@ -40,6 +40,9 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import java.util.Locale
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.teamcheesecake.doomscrollpet.R
 
 @Composable
 fun PetActionBottomBar(
@@ -54,9 +57,9 @@ fun PetActionBottomBar(
             .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
-        ActionIcon(label = "Food", onClick = onFood)
-        ActionIcon(label = "Water", onClick = onWater)
-        ActionIcon(label = "Exercise", onClick = onExercise)
+        ActionIcon(label = "Food", iconRes = R.drawable.feed_icon, onClick = onFood)
+        ActionIcon(label = "Water", iconRes = R.drawable.water_icon, onClick = onWater)
+        ActionIcon(label = "Exercise", iconRes = R.drawable.exercise_icon, onClick = onExercise)
     }
 }
 
@@ -325,7 +328,7 @@ private fun AddFriendDialog(
 private fun formatKm(meters: Double): String = String.format(Locale.US, "%.2f", meters / 1000.0)
 
 @Composable
-private fun ActionIcon(label: String, onClick: () -> Unit) {
+private fun ActionIcon(label: String, iconRes: Int, onClick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.clickable { onClick() }
@@ -334,7 +337,14 @@ private fun ActionIcon(label: String, onClick: () -> Unit) {
             modifier = Modifier
                 .size(56.dp)
                 .background(Color.White, RoundedCornerShape(8.dp)),
-        )
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                painter = painterResource(id = iconRes),
+                contentDescription = label,
+                modifier = Modifier.size(40.dp),
+            )
+        }
         Text(text = label, style = MaterialTheme.typography.labelSmall)
     }
 }

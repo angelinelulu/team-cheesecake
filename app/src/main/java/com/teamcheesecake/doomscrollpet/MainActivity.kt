@@ -50,8 +50,12 @@ import com.teamcheesecake.doomscrollpet.screens.onboarding.ConnectScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.NameScreen
 import com.teamcheesecake.doomscrollpet.ui.theme.DoomscrollPetTheme
 import kotlinx.coroutines.delay
+import com.teamcheesecake.doomscrollpet.screens.onboarding.SignInScreen
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 
 private object Routes {
+    const val SIGN_IN = "onboarding/signin"
     const val NAME = "onboarding/name"
     const val ANIMAL = "onboarding/animal"
     const val AVOID_APPS = "onboarding/avoid"
@@ -82,7 +86,25 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
     val navController = rememberNavController()
     val state = petViewModel.uiState
 
-    NavHost(navController = navController, startDestination = Routes.NAME) {
+    val startDestination = remember {
+        when {
+            Firebase.auth.currentUser == null -> Routes.SIGN_IN
+            !state.onboardingComplete -> Routes.NAME   // ⚠️ match this to whatever your actual "done onboarding" flag is called
+            else -> Routes.MAIN
+        }
+    }
+
+    NavHost(navController = navController, startDestination = startDestination) {
+        composable(Routes.SIGN_IN) {
+            SignInScreen(
+                onSignInSuccess = { uid ->
+                    petViewModel.loadOrCreateAccountCode(uid)
+                    navController.navigate(Routes.NAME) {
+                        popUpTo(Routes.SIGN_IN) { inclusive = true }
+                    }
+                },
+            )
+        }
         composable(Routes.NAME) {
             NameScreen(
                 name = state.ownerName,

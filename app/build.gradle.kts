@@ -39,6 +39,10 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"
     }
+
+    dependencies {
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
+    }
 }
 
 dependencies {
@@ -58,8 +62,10 @@ dependencies {
     // Firestore only — just for storing/reading friend locations, no Auth/Messaging.
     implementation(platform("com.google.firebase:firebase-bom:34.17.0"))
     implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-auth")
 
     implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
 
     debugImplementation("androidx.compose.ui:ui-tooling")

@@ -12,6 +12,10 @@ import com.teamcheesecake.doomscrollpet.data.LocationRepository
 import com.teamcheesecake.doomscrollpet.data.ProximityNotifier
 import com.teamcheesecake.doomscrollpet.data.ScreenTimeRepository
 import kotlinx.coroutines.launch
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.firestore.SetOptions
+import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.tasks.await
 
 private const val BASE_HEALTH = 80
 private const val AVOID_MINUTE_PENALTY = 2
@@ -39,6 +43,20 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         private set
 
     // Onboarding
+
+    fun loadOrCreateAccountCode(uid: String) {
+        viewModelScope.launch {
+            val userDocRef = Firebase.firestore.collection("users").document(uid)
+            val snapshot = userDocRef.get().await()
+            val existingCode = snapshot.getString("myCode")
+
+            val code = existingCode ?: uiState.myCode
+            if (existingCode == null) {
+                userDocRef.set(mapOf("myCode" to code), SetOptions.merge()).await()
+            }
+            uiState = uiState.copy(myCode = code)
+        }
+    }
 
     fun setName(name: String) {
         uiState = uiState.copy(ownerName = name)

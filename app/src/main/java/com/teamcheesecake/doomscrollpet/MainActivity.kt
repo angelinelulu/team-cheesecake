@@ -2,6 +2,7 @@ package com.teamcheesecake.doomscrollpet
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -48,7 +49,9 @@ import com.teamcheesecake.doomscrollpet.screens.onboarding.AppSelectionScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.ConnectScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.NameScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.SignInScreen
+import com.teamcheesecake.doomscrollpet.services.ScreenTimeService
 import kotlinx.coroutines.delay
+import kotlin.jvm.java
 
 private object Routes {
     const val SIGN_IN = "onboarding/signin"
@@ -159,6 +162,7 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
                         }
                     }
                 },
+
             )
         }
 
@@ -202,6 +206,15 @@ private fun MainAppScreen(
         while (locationPermissionGranted) {
             petViewModel.refreshMyLocation()
             delay(LOCATION_REFRESH_INTERVAL_MS)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        val serviceIntent = Intent(context, ScreenTimeService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(serviceIntent)
+        } else {
+            context.startService(serviceIntent)
         }
     }
 

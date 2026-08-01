@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -43,17 +42,11 @@ import com.teamcheesecake.doomscrollpet.model.MORE_APP_OPTIONS
 import com.teamcheesecake.doomscrollpet.model.PetViewModel
 import com.teamcheesecake.doomscrollpet.screens.FriendsScreen
 import com.teamcheesecake.doomscrollpet.screens.PetHomeScreen
-import com.teamcheesecake.doomscrollpet.screens.StatsScreen
-import com.teamcheesecake.doomscrollpet.screens.onboarding.AnimalScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.AppSelectionScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.ConnectScreen
-import com.teamcheesecake.doomscrollpet.screens.onboarding.NameScreen
-import com.teamcheesecake.doomscrollpet.ui.theme.DoomscrollPetTheme
 import kotlinx.coroutines.delay
 
 private object Routes {
-    const val NAME = "onboarding/name"
-    const val ANIMAL = "onboarding/animal"
     const val AVOID_APPS = "onboarding/avoid"
     const val MORE_APPS = "onboarding/more"
     const val CONNECT = "onboarding/connect"
@@ -70,9 +63,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         ProximityNotifier.ensureChannel(this)
         setContent {
-            DoomscrollPetTheme {
-                DoomscrollPetApp(petViewModel)
-            }
+            DoomscrollPetApp(petViewModel)
         }
     }
 }
@@ -82,21 +73,7 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
     val navController = rememberNavController()
     val state = petViewModel.uiState
 
-    NavHost(navController = navController, startDestination = Routes.NAME) {
-        composable(Routes.NAME) {
-            NameScreen(
-                name = state.ownerName,
-                onNameChange = petViewModel::setName,
-                onNext = { navController.navigate(Routes.ANIMAL) },
-            )
-        }
-        composable(Routes.ANIMAL) {
-            AnimalScreen(
-                selected = state.animal,
-                onSelect = petViewModel::selectAnimal,
-                onNext = { navController.navigate(Routes.AVOID_APPS) },
-            )
-        }
+    NavHost(navController = navController, startDestination = Routes.AVOID_APPS) {
         composable(Routes.AVOID_APPS) {
             AppSelectionScreen(
                 title = "Apps to avoid",
@@ -124,7 +101,7 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
                 onFinish = {
                     petViewModel.completeOnboarding()
                     navController.navigate(Routes.MAIN) {
-                        popUpTo(Routes.NAME) { inclusive = true }
+                        popUpTo(Routes.AVOID_APPS) { inclusive = true }
                     }
                 },
             )
@@ -191,12 +168,6 @@ private fun MainAppScreen(petViewModel: PetViewModel) {
                     icon = { Icon(Icons.Default.Group, contentDescription = "Friends") },
                     label = { Text("Friends") },
                 )
-                NavigationBarItem(
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 },
-                    icon = { Icon(Icons.Default.Star, contentDescription = "Stats") },
-                    label = { Text("Stats") },
-                )
             }
         },
     ) { innerPadding ->
@@ -208,7 +179,6 @@ private fun MainAppScreen(petViewModel: PetViewModel) {
                 onAddFriend = petViewModel::addFriend,
                 modifier = Modifier.padding(innerPadding),
             )
-            2 -> StatsScreen(state = state, modifier = Modifier.padding(innerPadding))
         }
     }
 }

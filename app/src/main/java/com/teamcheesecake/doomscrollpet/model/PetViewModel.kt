@@ -40,14 +40,6 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
 
     // Onboarding
 
-    fun setName(name: String) {
-        uiState = uiState.copy(ownerName = name)
-    }
-
-    fun selectAnimal(animal: Animal) {
-        uiState = uiState.copy(animal = animal)
-    }
-
     fun toggleAvoidApp(app: String) {
         uiState = uiState.copy(avoidApps = uiState.avoidApps.toggle(app))
     }

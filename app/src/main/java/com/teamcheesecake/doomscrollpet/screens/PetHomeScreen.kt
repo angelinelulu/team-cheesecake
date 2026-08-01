@@ -14,15 +14,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.teamcheesecake.doomscrollpet.model.PetMood
 import com.teamcheesecake.doomscrollpet.model.PetUiState
-import java.util.Locale
 import com.teamcheesecake.doomscrollpet.ui.theme.YellowBack
-import androidx.compose.ui.draw.clip
+import java.util.Locale
 
 @Composable
 fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
@@ -69,27 +69,31 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
                 .weight(1f)
                 .padding(16.dp),
         ) {
-            // Pet Park icon + mood icon row (swap in your own icon assets here)
+            // Pet Park icon row (swap in your own icon assets here)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = "\uD83C\uDF33", style = MaterialTheme.typography.headlineSmall)
+                    Text(text = "🌳", style = MaterialTheme.typography.headlineSmall)
                     Text(text = "Pet Park", style = MaterialTheme.typography.labelSmall)
                 }
             }
 
-        Text(text = "Doomscroll today: ${state.doomscrollMinutesToday} / ${state.doomscrollLimitMinutes} min")
-        Text(text = "Good-app time today: ${state.moreAppMinutesToday} min")
-        Text(text = "Distance today: ${formatKm(state.distanceMetersToday)} km")
-        Text(text = "Streak: ${state.streakDays} days")
+            Spacer(modifier = Modifier.height(16.dp))
 
-        if (!state.screenTimeConnected) {
-            Text(
-                text = "Not connected: screen time",
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.padding(top = 8.dp),
+            Text(text = "Doomscroll today: ${state.doomscrollMinutesToday} / ${state.doomscrollLimitMinutes} min")
+            Text(text = "Good-app time today: ${state.moreAppMinutesToday} min")
+            Text(text = "Distance today: ${formatKm(state.distanceMetersToday)} km")
+            Text(text = "Streak: ${state.streakDays} days")
+            if (!state.screenTimeConnected) {
+                Text(
+                    text = "Not connected: screen time",
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             // Hearts row (based on health)
@@ -100,7 +104,7 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
                 val filledHearts = (state.health / 20).coerceIn(0, 5)
                 repeat(5) { index ->
                     Text(
-                        text = if (index < filledHearts) "\u2764\uFE0F" else "\uD83E\uDD0D",
+                        text = if (index < filledHearts) "❤️" else "🤍",
                         style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.padding(horizontal = 2.dp),
                     )
@@ -145,8 +149,6 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center,
                     )
-                    Text(text = "Doomscroll today: ${state.doomscrollMinutesToday} / ${state.doomscrollLimitMinutes} min")
-                    Text(text = "Streak: ${state.streakDays} days")
                 }
             }
         }
@@ -167,6 +169,7 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
 }
 
 private fun formatKm(meters: Double): String = String.format(Locale.US, "%.2f", meters / 1000.0)
+
 @Composable
 private fun ActionIcon(label: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {

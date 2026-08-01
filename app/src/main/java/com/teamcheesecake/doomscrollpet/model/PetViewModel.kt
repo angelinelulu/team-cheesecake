@@ -17,18 +17,27 @@ import com.teamcheesecake.doomscrollpet.data.ScreenTimeRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.util.Calendar
 import kotlinx.coroutines.withContext
 
 private const val BASE_HEALTH = 80
 private const val AVOID_MINUTE_PENALTY = 2
 private const val MORE_MINUTE_BONUS = 1
 private const val METERS_PER_HEALTH_POINT = 100
+private const val FOOD_HEALTH_BONUS = 50
+private const val WATER_HEALTH_BONUS = 25
+
+// Ignore GPS deltas smaller than this between fixes — otherwise standing still slowly racks up
+// "distance" from ordinary GPS jitter.
 private const val MIN_MOVEMENT_METERS = 5.0
 private const val TAG = "PetViewModel"
 
 class PetViewModel(application: Application) : AndroidViewModel(application) {
 
     private val db = FirebaseFirestore.getInstance()
+
+    // Used only to read this device's own GPS for the movement/distance stat — no location
+    // is published or shared with friends.
     private val locationRepository = LocationRepository(application)
     private val screenTimeRepository = ScreenTimeRepository(application)
     private val friendRepository = FriendRepository()
@@ -38,6 +47,8 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
 
     private var myLat: Double? = null
     private var myLng: Double? = null
+
+    // The signed-in user's Firebase Auth uid — set once in loadOrCreateAccountCode.
     private var uid: String? = null
     private var isAccountLoaded = false
 
@@ -85,6 +96,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     userDocRef.set(mapOf("myCode" to code), SetOptions.merge()).await()
                 }
 
+                // Load back in whatever was previously saved, so a restart doesn't wipe progress.
                 val savedAnimal = snapshot.getString("animal")?.let { name ->
                     runCatching { Animal.valueOf(name) }.getOrNull()
                 }
@@ -108,6 +120,10 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     moreAppMinutesToday = savedMoreApp,
                     streakDays = (snapshot.getLong("streakDays") ?: 0L).toInt(),
                     proximityBonus = (snapshot.getLong("proximityBonus") ?: 0L).toInt(),
+                    careBonus = (snapshot.getLong("careBonus") ?: 0L).toInt(),
+                    lastFedTimestamp = snapshot.getLong("lastFedTimestamp") ?: 0L,
+                    lastWaterTimestamp = snapshot.getLong("lastWaterTimestamp") ?: 0L,
+                    lastStatsUpdateMillis = snapshot.getTimestamp("lastStatsUpdate")?.toDate()?.time ?: 0L,
                     onboardingComplete = snapshot.getBoolean("onboardingComplete") ?: false,
                 )
 
@@ -173,6 +189,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
 
     // --- Screen Time & Health ---
 
+    /** Call after returning from the usage-access settings screen, and periodically after. */
     fun refreshScreenTime() {
         if (!isAccountLoaded || !screenTimeRepository.hasUsageAccess()) {
             uiState = uiState.copy(screenTimeConnected = screenTimeRepository.hasUsageAccess())
@@ -198,18 +215,31 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun recomputeHealth() {
+        checkDailyReset()
         val computed = BASE_HEALTH -
                 uiState.doomscrollMinutesToday * AVOID_MINUTE_PENALTY +
                 uiState.moreAppMinutesToday * MORE_MINUTE_BONUS +
                 (uiState.distanceMetersToday / METERS_PER_HEALTH_POINT).toInt() +
-                uiState.proximityBonus
+                uiState.proximityBonus +
+                uiState.careBonus
+
         uiState = uiState.copy(health = computed.coerceIn(0, 100))
         syncStatsToFirestore()
     }
 
+    /**
+     * Pushes the current stats snapshot to this user's Firestore document. Called after every
+     * stat-affecting change (see recomputeHealth) so the saved copy never drifts far from what's
+     * on screen. Uses merge so it never touches unrelated fields like myCode or onboardingComplete.
+     */
     private fun syncStatsToFirestore() {
         val userId = uid ?: return
         if (!isAccountLoaded) return
+
+        val now = com.google.firebase.Timestamp.now()
+
+        // Update local state first so checkDailyReset has the latest baseline
+        uiState = uiState.copy(lastStatsUpdateMillis = now.toDate().time)
 
         val data = mapOf(
             "doomscrollMinutesToday" to uiState.doomscrollMinutesToday,
@@ -218,38 +248,70 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
             "streakDays" to uiState.streakDays,
             "health" to uiState.health,
             "proximityBonus" to uiState.proximityBonus,
-            "lastStatsUpdate" to com.google.firebase.Timestamp.now(),
+            "careBonus" to uiState.careBonus,
+            "lastFedTimestamp" to uiState.lastFedTimestamp,
+            "lastWaterTimestamp" to uiState.lastWaterTimestamp,
+            "lastStatsUpdate" to now,
         )
         db.collection("users").document(userId)
             .set(data, SetOptions.merge())
             .addOnFailureListener { e -> Log.e(TAG, "Failed to sync stats", e) }
     }
 
-    // --- Friends Flow ---
+    private fun checkDailyReset() {
+        val lastUpdate = uiState.lastStatsUpdateMillis ?: return
+        val now = System.currentTimeMillis()
 
+        val calLast = Calendar.getInstance().apply { timeInMillis = lastUpdate }
+        val calNow = Calendar.getInstance().apply { timeInMillis = now }
+
+        if (calLast.get(Calendar.DAY_OF_YEAR) != calNow.get(Calendar.DAY_OF_YEAR) ||
+            calLast.get(Calendar.YEAR) != calNow.get(Calendar.YEAR)) {
+            // New day: reset "Today" accumulators
+            uiState = uiState.copy(
+                doomscrollMinutesToday = 0,
+                moreAppMinutesToday = 0,
+                distanceMetersToday = 0.0,
+                proximityBonus = 0,
+                careBonus = 0
+            )
+        }
+    }
+
+    // Friends — request / accept flow (no location involved)
+
+    /** Sends a friend request to [code]. Does nothing visible until the other side accepts. */
     fun sendFriendRequest(code: String) {
         val myCode = uiState.myCode
         val myName = uiState.ownerName.ifBlank { myCode }
         viewModelScope.launch { friendRepository.sendRequest(myCode, myName, code) }
     }
 
+    /** Accepts an incoming request from [code], turning it into an active friendship. */
     fun acceptFriendRequest(code: String) {
         val myCode = uiState.myCode
         val myName = uiState.ownerName.ifBlank { myCode }
         viewModelScope.launch { friendRepository.acceptRequest(myCode, code, myName) }
     }
 
+    /** Declines an incoming request from [code] (or cancels one you sent). */
     fun declineFriendRequest(code: String) {
         val myCode = uiState.myCode
         viewModelScope.launch { friendRepository.removeLink(myCode, code) }
     }
 
+    /** Removes an existing friend entirely. */
     fun removeFriend(code: String) {
         val myCode = uiState.myCode
         uiState = uiState.copy(friends = uiState.friends.filterNot { it.code == code })
         viewModelScope.launch { friendRepository.removeLink(myCode, code) }
     }
 
+    /**
+     * Starts listening to every friend_link involving this user. Splits the results into
+     * accepted friends vs incoming/outgoing pending requests (for the UI to show an
+     * accept/decline prompt). Friends here carry no location data — just code + name.
+     */
     private fun startListeningToFriendLinks() {
         friendLinksListener?.remove()
         val myCode = uiState.myCode
@@ -361,11 +423,23 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun feedPet() {
-        uiState = uiState.copy(health = (uiState.health + 5).coerceAtMost(100))
+        if (uiState.canFeedTreat) {
+            uiState = uiState.copy(
+                lastFedTimestamp = System.currentTimeMillis(),
+                careBonus = uiState.careBonus + FOOD_HEALTH_BONUS
+            )
+            recomputeHealth()
+        }
     }
 
     fun waterPet() {
-        uiState = uiState.copy(health = (uiState.health + 2).coerceAtMost(100))
+        if (uiState.canGiveWater) {
+            uiState = uiState.copy(
+                lastWaterTimestamp = System.currentTimeMillis(),
+                careBonus = uiState.careBonus + WATER_HEALTH_BONUS
+            )
+            recomputeHealth()
+        }
     }
 
     fun exercisePet() {

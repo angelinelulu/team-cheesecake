@@ -7,21 +7,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +26,7 @@ fun PetHomeScreen(
     state: PetUiState,
     myCode: String,
     onSendFriendRequest: (String) -> Unit,
+    onOpenSettings: () -> Unit = {},
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -47,7 +35,7 @@ fun PetHomeScreen(
 
     Column(modifier = modifier.fillMaxSize()) {
 
-        // --- Top bar ---
+        // --- Top Bar ---
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -61,7 +49,7 @@ fun PetHomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = { /* TODO settings */ }) {
+                IconButton(onClick = onOpenSettings) {
                     Icon(Icons.Default.Settings, contentDescription = "Settings")
                 }
                 Text(
@@ -105,14 +93,13 @@ fun PetHomeScreen(
             )
         }
 
-        // --- Middle content area ---
+        // --- Middle Content Area ---
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
                 .padding(16.dp),
         ) {
-            // Pet Park icon row (swap in your own icon assets here)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -125,6 +112,7 @@ fun PetHomeScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Doomscroll & Stats Display
             Text(text = "Doomscroll today: ${state.doomscrollMinutesToday} / ${state.doomscrollLimitMinutes} min")
             Text(text = "Good-app time today: ${state.moreAppMinutesToday} min")
             Text(text = "Distance today: ${formatKm(state.distanceMetersToday)} km")
@@ -139,7 +127,7 @@ fun PetHomeScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Hearts row (based on health)
+            // Health Hearts
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
@@ -156,7 +144,7 @@ fun PetHomeScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Health color bar (red -> green gradient feel via progress color)
+            // Health Bar
             LinearProgressIndicator(
                 progress = { state.health / 100f },
                 modifier = Modifier
@@ -177,7 +165,7 @@ fun PetHomeScreen(
                 )
             }
 
-            // Big pet display box
+            // Big Pet Display Box
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -196,7 +184,7 @@ fun PetHomeScreen(
             }
         }
 
-        // --- Bottom action bar ---
+        // --- Bottom Action Bar ---
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -235,15 +223,8 @@ private fun AddFriendDialog(
         title = { Text("Add a Friend") },
         text = {
             Column {
-                Text(
-                    text = "Your code",
-                    style = MaterialTheme.typography.labelSmall,
-                )
-                Text(
-                    text = myCode,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
+                Text(text = "Your code", style = MaterialTheme.typography.labelSmall)
+                Text(text = myCode, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(
                     text = "Share this with your friend, or enter theirs below. They'll need to accept before you're connected.",
                     style = MaterialTheme.typography.bodySmall,
@@ -266,9 +247,7 @@ private fun AddFriendDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
+            TextButton(onClick = onDismiss) { Text("Cancel") }
         },
     )
 }

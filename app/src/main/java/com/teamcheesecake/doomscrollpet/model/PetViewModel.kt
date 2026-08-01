@@ -21,29 +21,19 @@ private const val BASE_HEALTH = 80
 private const val AVOID_MINUTE_PENALTY = 2
 private const val MORE_MINUTE_BONUS = 1
 private const val METERS_PER_HEALTH_POINT = 100
-
-// Ignore GPS deltas smaller than this between fixes — otherwise standing still slowly racks up
-// "distance" from ordinary GPS jitter.
 private const val MIN_MOVEMENT_METERS = 5.0
-
 private const val TAG = "PetViewModel"
 
 class PetViewModel(application: Application) : AndroidViewModel(application) {
 
     private val db = FirebaseFirestore.getInstance()
-
-    // Used only to read this device's own GPS for the movement/distance stat — no location
-    // is published or shared with friends.
     private val locationRepository = LocationRepository(application)
     private val screenTimeRepository = ScreenTimeRepository(application)
     private val friendRepository = FriendRepository()
 
     private var friendLinksListener: ListenerRegistration? = null
-
     private var myLat: Double? = null
     private var myLng: Double? = null
-
-    // The signed-in user's Firebase Auth uid — set once in loadOrCreateAccountCode.
     private var uid: String? = null
 
     var uiState by mutableStateOf(
@@ -57,7 +47,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     )
         private set
 
-    // Onboarding
+    // Onboarding & Profile
 
     fun loadOrCreateAccountCode(userId: String) {
         uid = userId
@@ -72,7 +62,6 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     userDocRef.set(mapOf("myCode" to code), SetOptions.merge()).await()
                 }
 
-                // Load back in whatever was previously saved, so a restart doesn't wipe progress.
                 val savedAnimal = snapshot.getString("animal")?.let { name ->
                     runCatching { Animal.valueOf(name) }.getOrNull()
                 }
@@ -122,25 +111,36 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun completeOnboarding() {
-        val userId = uid
-        if (userId == null) {
+        val userId = uid ?: run {
             Log.w(TAG, "completeOnboarding called before uid was set — not saved")
             return
         }
         uiState = uiState.copy(onboardingComplete = true)
         db.collection("users").document(userId)
             .set(mapOf("onboardingComplete" to true), SetOptions.merge())
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Failed to save onboarding completion", e)
-            }
+            .addOnFailureListener { e -> Log.e(TAG, "Failed to save onboarding completion", e) }
     }
 
     private fun Set<String>.toggle(item: String): Set<String> =
         if (contains(item)) this - item else this + item
 
-    // Screen time (real, via UsageStatsManager)
+    // Direct Doomscroll Updates
 
-    /** Call after returning from the usage-access settings screen, and periodically after. */
+    /** Explicitly set today's doomscroll minutes. Recomputes health and updates Firestore. */
+    fun setDoomscrollMinutes(minutes: Int) {
+        uiState = uiState.copy(doomscrollMinutesToday = minutes.coerceAtLeast(0))
+        recomputeHealth()
+    }
+
+    /** Add or subtract minutes from today's doomscroll total. */
+    fun addDoomscrollMinutes(deltaMinutes: Int) {
+        val newTotal = (uiState.doomscrollMinutesToday + deltaMinutes).coerceAtLeast(0)
+        uiState = uiState.copy(doomscrollMinutesToday = newTotal)
+        recomputeHealth()
+    }
+
+    // Screen Time & Health
+
     fun refreshScreenTime() {
         if (!screenTimeRepository.hasUsageAccess()) {
             uiState = uiState.copy(screenTimeConnected = false)
@@ -166,11 +166,6 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         syncStatsToFirestore()
     }
 
-    /**
-     * Pushes the current stats snapshot to this user's Firestore document. Called after every
-     * stat-affecting change (see recomputeHealth) so the saved copy never drifts far from what's
-     * on screen. Uses merge so it never touches unrelated fields like myCode or onboardingComplete.
-     */
     private fun syncStatsToFirestore() {
         val userId = uid ?: return
         val data = mapOf(
@@ -184,53 +179,34 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         )
         db.collection("users").document(userId)
             .set(data, SetOptions.merge())
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Failed to sync stats", e)
-            }
+            .addOnFailureListener { e -> Log.e(TAG, "Failed to sync stats", e) }
     }
 
-    // Friends — request / accept flow (no location involved)
+    // Friends Flow
 
-    /** Sends a friend request to [code]. Does nothing visible until the other side accepts. */
     fun sendFriendRequest(code: String) {
         val myCode = uiState.myCode
         val myName = uiState.ownerName.ifBlank { myCode }
-        viewModelScope.launch {
-            friendRepository.sendRequest(myCode, myName, code)
-        }
+        viewModelScope.launch { friendRepository.sendRequest(myCode, myName, code) }
     }
 
-    /** Accepts an incoming request from [code], turning it into an active friendship. */
     fun acceptFriendRequest(code: String) {
         val myCode = uiState.myCode
         val myName = uiState.ownerName.ifBlank { myCode }
-        viewModelScope.launch {
-            friendRepository.acceptRequest(myCode, code, myName)
-        }
+        viewModelScope.launch { friendRepository.acceptRequest(myCode, code, myName) }
     }
 
-    /** Declines an incoming request from [code] (or cancels one you sent). */
     fun declineFriendRequest(code: String) {
         val myCode = uiState.myCode
-        viewModelScope.launch {
-            friendRepository.removeLink(myCode, code)
-        }
+        viewModelScope.launch { friendRepository.removeLink(myCode, code) }
     }
 
-    /** Removes an existing friend entirely. */
     fun removeFriend(code: String) {
         val myCode = uiState.myCode
         uiState = uiState.copy(friends = uiState.friends.filterNot { it.code == code })
-        viewModelScope.launch {
-            friendRepository.removeLink(myCode, code)
-        }
+        viewModelScope.launch { friendRepository.removeLink(myCode, code) }
     }
 
-    /**
-     * Starts listening to every friend_link involving this user. Splits the results into
-     * accepted friends vs incoming/outgoing pending requests (for the UI to show an
-     * accept/decline prompt). Friends here carry no location data — just code + name.
-     */
     private fun startListeningToFriendLinks() {
         friendLinksListener?.remove()
         val myCode = uiState.myCode
@@ -240,23 +216,15 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
             val outgoing = links.filter { it.isOutgoingFor(myCode) }
 
             uiState = uiState.copy(
-                friends = accepted.map {
-                    Friend(code = it.otherCode(myCode), name = it.otherName(myCode))
-                },
-                incomingRequests = incoming.map {
-                    Friend(code = it.otherCode(myCode), name = it.otherName(myCode))
-                },
-                outgoingRequests = outgoing.map {
-                    Friend(code = it.otherCode(myCode), name = it.otherName(myCode))
-                },
+                friends = accepted.map { Friend(code = it.otherCode(myCode), name = it.otherName(myCode)) },
+                incomingRequests = incoming.map { Friend(code = it.otherCode(myCode), name = it.otherName(myCode)) },
+                outgoingRequests = outgoing.map { Friend(code = it.otherCode(myCode), name = it.otherName(myCode)) },
             )
         }
     }
 
-    /**
-     * Fetches this device's current location and accumulates distance traveled since the last
-     * fix (filtering out small GPS jitter). Purely local — nothing here is published or shared.
-     */
+    // Location & Distance
+
     fun refreshMyLocation() {
         viewModelScope.launch {
             val latLng = locationRepository.getCurrentLatLng() ?: return@launch
@@ -271,9 +239,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     previousLat, previousLng, latLng.first, latLng.second
                 )
                 if (delta >= MIN_MOVEMENT_METERS) {
-                    uiState = uiState.copy(
-                        distanceMetersToday = uiState.distanceMetersToday + delta
-                    )
+                    uiState = uiState.copy(distanceMetersToday = uiState.distanceMetersToday + delta)
                     myLat = latLng.first
                     myLng = latLng.second
                     recomputeHealth()

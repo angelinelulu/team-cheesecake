@@ -36,6 +36,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.auth.FirebaseAuth
 import com.teamcheesecake.doomscrollpet.data.ProximityNotifier
 import com.teamcheesecake.doomscrollpet.model.AVOID_APP_OPTIONS
 import com.teamcheesecake.doomscrollpet.model.MORE_APP_OPTIONS
@@ -48,7 +49,6 @@ import com.teamcheesecake.doomscrollpet.screens.onboarding.ConnectScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.NameScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.SignInScreen
 import kotlinx.coroutines.delay
-import com.google.firebase.auth.FirebaseAuth
 
 private object Routes {
     const val SIGN_IN = "onboarding/signin"
@@ -58,6 +58,7 @@ private object Routes {
     const val MORE_APPS = "onboarding/more"
     const val CONNECT = "onboarding/connect"
     const val MAIN = "main"
+    const val SETTINGS_APPS = "settings/apps"
 }
 
 private const val LOCATION_REFRESH_INTERVAL_MS = 15_000L
@@ -80,11 +81,6 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
     val navController = rememberNavController()
     val state = petViewModel.uiState
 
-    // Always start at SIGN_IN if there's no current user. If there IS a current
-    // user (e.g. app was force-closed and reopened), we still route through
-    // SIGN_IN's success handler logic below rather than trusting local state here,
-    // since local PetViewModel state doesn't yet reflect what's actually saved in
-    // Firestore on a cold launch.
     val startDestination = remember {
         if (FirebaseAuth.getInstance().currentUser == null) Routes.SIGN_IN else Routes.SIGN_IN
     }
@@ -154,6 +150,7 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
         composable(Routes.MAIN) {
             MainAppScreen(
                 petViewModel = petViewModel,
+                onOpenSettings = { navController.navigate(Routes.SETTINGS_APPS) },
                 onSignOut = {
                     val context = navController.context
                     FirebaseManager.signOut(context) {
@@ -164,11 +161,25 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
                 },
             )
         }
+
+        composable(Routes.SETTINGS_APPS) {
+            AppSelectionScreen(
+                title = "Apps to avoid",
+                subtitle = "Time here will reduce your pet's health.",
+                options = AVOID_APP_OPTIONS,
+                selected = state.avoidApps,
+                onToggle = petViewModel::toggleAvoidApp,
+                onNext = { navController.popBackStack() }, // Goes back to main screen when done
+            )
+        }
     }
 }
 
 @Composable
-private fun MainAppScreen(petViewModel: PetViewModel, onSignOut: () -> Unit) {
+private fun MainAppScreen(
+    petViewModel: PetViewModel,
+    onOpenSettings: () -> Unit,
+    onSignOut: () -> Unit) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val state = petViewModel.uiState
     val context = LocalContext.current
@@ -231,7 +242,9 @@ private fun MainAppScreen(petViewModel: PetViewModel, onSignOut: () -> Unit) {
                 state = state,
                 myCode = state.myCode,
                 onSendFriendRequest = petViewModel::sendFriendRequest,
+                onOpenSettings = onOpenSettings,
                 onSignOut = onSignOut,
+//                onUpdateDoomscrollMinutes = petViewModel::setDoomscrollMinutes,
                 modifier = Modifier.padding(innerPadding),
             )
             1 -> FriendsScreen(

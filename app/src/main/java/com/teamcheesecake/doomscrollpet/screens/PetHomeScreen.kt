@@ -322,41 +322,52 @@ fun PetHomeScreen(
             },
         )
     }
-
     if (showPopup) {
         AlertDialog(
             onDismissRequest = { showPopup = false },
-            title = { Text("Popup Title") },
-            text = { Text("Whatever content you want here.") },
-            confirmButton = {
-                TextButton(onClick = { showPopup = false }) {
-                    Text("OK")
-                }
-            },
-        )
-    }
-
-    if (showUnlockPopup) {
-        AlertDialog(
-            onDismissRequest = { showUnlockPopup = false },
             title = {
-                Text("🎉 New Pet Unlocked!")
+                Text(
+                    text = "Swap Pet",
+                    fontWeight = FontWeight.Bold
+                )
             },
             text = {
-                Text(
-                    "Your pet has reached full health!\n\n" +
-                            "You've unlocked a new pet! 🐾"
-                )
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.cat_character), // Use your actual drawable name
+                        contentDescription = "Cat Pet",
+                        modifier = Modifier
+                            .size(120.dp)
+                            .padding(bottom = 12.dp)
+                    )
+                    Text(
+                        text = "Would you like to swap to the Cat?",
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             },
             confirmButton = {
                 TextButton(
-                    onClick = { showUnlockPopup = false }
+                    onClick = {
+                        // TODO: Add your logic to swap pets here
+                        showPopup = false
+                    }
                 ) {
-                    Text("Awesome!")
+                    Text("Select Cat")
                 }
             },
+            dismissButton = {
+                TextButton(onClick = { showPopup = false }) {
+                    Text("Cancel")
+                }
+            }
         )
     }
+
 }
 
 @Composable

@@ -1,13 +1,13 @@
 package com.teamcheesecake.doomscrollpet.data
 
 import android.app.AppOpsManager
+import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.os.Process
 import java.util.Calendar
 
-/** Reads real per-app foreground time via UsageStatsManager. Requires the user to grant
- * "Usage access" for this app in system settings (a special permission, not a runtime dialog). */
+/** Reads real per-app foreground time via UsageStatsManager using UsageEvents. */
 class ScreenTimeRepository(private val context: Context) {
 
     @Suppress("DEPRECATION")
@@ -21,7 +21,7 @@ class ScreenTimeRepository(private val context: Context) {
         return mode == AppOpsManager.MODE_ALLOWED
     }
 
-    /** Minutes spent in the foreground today, per package, for the given packages. */
+    /** Accurate screen-on minutes spent in foreground today for the specified packages. */
     fun getTodayUsageMinutes(packageNames: Collection<String>): Map<String, Long> {
         if (!hasUsageAccess() || packageNames.isEmpty()) return emptyMap()
 
@@ -34,7 +34,43 @@ class ScreenTimeRepository(private val context: Context) {
         }.timeInMillis
         val now = System.currentTimeMillis()
 
-        val stats = usageStatsManager.queryAndAggregateUsageStats(startOfDay, now)
-        return packageNames.associateWith { pkg -> (stats[pkg]?.totalTimeInForeground ?: 0L) / 60_000L }
+        val events = usageStatsManager.queryEvents(startOfDay, now)
+        val event = UsageEvents.Event()
+
+        val totalTimesMs = mutableMapOf<String, Long>()
+        val startTimesMs = mutableMapOf<String, Long>()
+
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            val pkg = event.packageName ?: continue
+            if (!packageNames.contains(pkg)) continue
+
+            val isForeground = event.eventType == UsageEvents.Event.ACTIVITY_RESUMED ||
+                    event.eventType == UsageEvents.Event.MOVE_TO_FOREGROUND
+            val isBackground = event.eventType == UsageEvents.Event.ACTIVITY_PAUSED ||
+                    event.eventType == UsageEvents.Event.MOVE_TO_BACKGROUND
+
+            if (isForeground) {
+                if (!startTimesMs.containsKey(pkg)) {
+                    startTimesMs[pkg] = event.timeStamp
+                }
+            } else if (isBackground) {
+                // If app was already open across midnight, calculate duration from startOfDay
+                val startTime = startTimesMs.remove(pkg) ?: startOfDay
+                val duration = (event.timeStamp - startTime).coerceAtLeast(0L)
+                totalTimesMs[pkg] = (totalTimesMs[pkg] ?: 0L) + duration
+            }
+        }
+
+        // Account for an app currently open in foreground right now
+        for ((pkg, startTime) in startTimesMs) {
+            val duration = (now - startTime).coerceAtLeast(0L)
+            totalTimesMs[pkg] = (totalTimesMs[pkg] ?: 0L) + duration
+        }
+
+        // Convert total milliseconds into minutes for each package
+        return packageNames.associateWith { pkg ->
+            (totalTimesMs[pkg] ?: 0L) / 60_000L
+        }
     }
 }

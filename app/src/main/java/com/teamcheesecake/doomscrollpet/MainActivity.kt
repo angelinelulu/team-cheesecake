@@ -42,10 +42,12 @@ import com.teamcheesecake.doomscrollpet.model.MORE_APP_OPTIONS
 import com.teamcheesecake.doomscrollpet.model.PetViewModel
 import com.teamcheesecake.doomscrollpet.screens.FriendsScreen
 import com.teamcheesecake.doomscrollpet.screens.PetHomeScreen
+import com.teamcheesecake.doomscrollpet.screens.onboarding.AnimalScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.AppSelectionScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.ConnectScreen
-import kotlinx.coroutines.delay
+import com.teamcheesecake.doomscrollpet.screens.onboarding.NameScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.SignInScreen
+import kotlinx.coroutines.delay
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 

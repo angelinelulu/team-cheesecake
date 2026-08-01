@@ -23,11 +23,35 @@
           }
         },
         {
+          "client_id": "757475054700-4tj61phf4tipuskjtbaa3lb43bta015n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.teamcheesecake.doomscrollpet",
+            "certificate_hash": "99b079740273dae7000f483d29fb2a446c255f49"
+          }
+        },
+        {
+          "client_id": "757475054700-77vcedt4bv8b6qpj1r3dhovgtr1sm9ui.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.teamcheesecake.doomscrollpet",
+            "certificate_hash": "e4354b3cfd732f8b8d3f35d6d75b1047d41bf620"
+          }
+        },
+        {
           "client_id": "757475054700-j0bdusc3n0k2k2v60o8nmbtt2vjlhpc4.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.teamcheesecake.doomscrollpet",
             "certificate_hash": "4129723ec797d69a7297e5d3fdc7747ef2fa2371"
+          }
+        },
+        {
+          "client_id": "757475054700-llkak0imkadj7qd07jnbs3aio20bn0fm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.teamcheesecake.doomscrollpet",
+            "certificate_hash": "d9c7a0bebe4c20fcbe23bb2304b0e428ebbe3454"
           }
         },
         {

@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.ListenerRegistration
 import com.teamcheesecake.doomscrollpet.data.DeviceIdentity
 import com.teamcheesecake.doomscrollpet.data.LocationRepository
+import com.teamcheesecake.doomscrollpet.data.MonitorPrefs
 import com.teamcheesecake.doomscrollpet.data.ProximityNotifier
 import com.teamcheesecake.doomscrollpet.data.ScreenTimeRepository
 import kotlinx.coroutines.launch
@@ -41,6 +42,10 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     )
         private set
 
+    init {
+        MonitorPrefs.setLimitMinutes(application, uiState.doomscrollLimitMinutes)
+    }
+
     // Onboarding
 
     fun loadOrCreateAccountCode(uid: String) {
@@ -67,6 +72,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggleAvoidApp(app: String) {
         uiState = uiState.copy(avoidApps = uiState.avoidApps.toggle(app))
+        MonitorPrefs.setAvoidApps(getApplication(), uiState.avoidApps)
     }
 
     fun toggleMoreApp(app: String) {
@@ -103,8 +109,19 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
             uiState.doomscrollMinutesToday * AVOID_MINUTE_PENALTY +
             uiState.moreAppMinutesToday * MORE_MINUTE_BONUS +
             (uiState.distanceMetersToday / METERS_PER_HEALTH_POINT).toInt() +
-            uiState.proximityBonus
+            uiState.proximityBonus -
+            uiState.penaltyPoints
         uiState = uiState.copy(health = computed.coerceIn(0, 100))
+    }
+
+    /** Picks up any health penalty the monitor service recorded (user chose "keep scrolling"
+     * on the doomscroll overlay) since we last checked. Call on resume. */
+    fun applyPendingPenalty() {
+        val penalty = MonitorPrefs.takePendingHealthPenalty(getApplication())
+        if (penalty > 0) {
+            uiState = uiState.copy(penaltyPoints = uiState.penaltyPoints + penalty)
+            recomputeHealth()
+        }
     }
 
     // Location / friends / distance traveled

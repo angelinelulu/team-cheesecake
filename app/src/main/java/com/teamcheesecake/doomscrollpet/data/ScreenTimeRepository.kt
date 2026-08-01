@@ -1,10 +1,13 @@
 package com.teamcheesecake.doomscrollpet.data
 
 import android.app.AppOpsManager
+import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.os.Process
 import java.util.Calendar
+
+private const val FOREGROUND_LOOKBACK_MS = 10 * 60 * 1000L
 
 /** Reads real per-app foreground time via UsageStatsManager. Requires the user to grant
  * "Usage access" for this app in system settings (a special permission, not a runtime dialog). */
@@ -36,5 +39,26 @@ class ScreenTimeRepository(private val context: Context) {
 
         val stats = usageStatsManager.queryAndAggregateUsageStats(startOfDay, now)
         return packageNames.associateWith { pkg -> (stats[pkg]?.totalTimeInForeground ?: 0L) / 60_000L }
+    }
+
+    /** Best-effort "what app is the user in right now" via the most recent foreground event
+     * in the last few minutes. There's no direct "current foreground app" API on Android. */
+    fun getCurrentForegroundPackage(): String? {
+        if (!hasUsageAccess()) return null
+
+        val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val end = System.currentTimeMillis()
+        val start = end - FOREGROUND_LOOKBACK_MS
+
+        val events = usageStatsManager.queryEvents(start, end)
+        val event = UsageEvents.Event()
+        var lastForegroundPackage: String? = null
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            if (event.eventType == UsageEvents.Event.MOVE_TO_FOREGROUND) {
+                lastForegroundPackage = event.packageName
+            }
+        }
+        return lastForegroundPackage
     }
 }

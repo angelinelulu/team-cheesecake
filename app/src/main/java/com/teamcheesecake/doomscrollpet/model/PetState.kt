@@ -64,6 +64,7 @@ data class PetUiState(
     val moreAppMinutesToday: Int = 0,
     val distanceMetersToday: Double = 0.0,
     val proximityBonus: Int = 0, // accumulates from time spent near friends today
+    val penaltyPoints: Int = 0, // accumulates from choosing "keep scrolling" on the doomscroll overlay
     val myCode: String = "",
     val friends: List<Friend> = emptyList(),
     val badges: List<String> = emptyList(),

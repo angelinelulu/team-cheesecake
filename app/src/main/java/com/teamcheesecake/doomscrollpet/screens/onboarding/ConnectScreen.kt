@@ -1,6 +1,7 @@
 package com.teamcheesecake.doomscrollpet.screens.onboarding
 
 import android.content.Intent
+import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -23,9 +28,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 
 /**
- * Screen time is a special Android permission (opens system settings, we re-check on resume
- * since there's no callback for it). Distance traveled comes from GPS location polling
- * (already running for the friend-proximity feature) rather than a separate health app.
+ * Screen time and "draw over other apps" are both special Android permissions (open system
+ * settings screens, no callback for either — we re-check both on resume). Distance traveled
+ * comes from GPS location polling (already running for the friend-proximity feature) rather
+ * than a separate health app.
  */
 @Composable
 fun ConnectScreen(
@@ -36,10 +42,14 @@ fun ConnectScreen(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    var overlayGranted by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) onCheckScreenTimeAccess()
+            if (event == Lifecycle.Event.ON_RESUME) {
+                onCheckScreenTimeAccess()
+                overlayGranted = Settings.canDrawOverlays(context)
+            }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
@@ -63,6 +73,21 @@ fun ConnectScreen(
             connected = screenTimeConnected,
             buttonLabel = "Open settings",
             onClick = { context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) },
+        )
+
+        ConnectRow(
+            title = "Pop-up alerts",
+            description = "Lets us interrupt you with a full-screen check-in when you've been doomscrolling too long.",
+            connected = overlayGranted,
+            buttonLabel = "Open settings",
+            onClick = {
+                context.startActivity(
+                    Intent(
+                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:${context.packageName}"),
+                    )
+                )
+            },
         )
 
         Button(

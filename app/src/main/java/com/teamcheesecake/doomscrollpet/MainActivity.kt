@@ -2,6 +2,7 @@ package com.teamcheesecake.doomscrollpet
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -36,6 +37,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.teamcheesecake.doomscrollpet.data.DoomscrollMonitorService
 import com.teamcheesecake.doomscrollpet.data.ProximityNotifier
 import com.teamcheesecake.doomscrollpet.model.AVOID_APP_OPTIONS
 import com.teamcheesecake.doomscrollpet.model.MORE_APP_OPTIONS
@@ -189,6 +191,7 @@ private fun MainAppScreen(petViewModel: PetViewModel) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 petViewModel.refreshScreenTime()
+                petViewModel.applyPendingPenalty()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -196,6 +199,8 @@ private fun MainAppScreen(petViewModel: PetViewModel) {
     }
     LaunchedEffect(Unit) {
         petViewModel.refreshScreenTime()
+        petViewModel.applyPendingPenalty()
+        ContextCompat.startForegroundService(context, Intent(context, DoomscrollMonitorService::class.java))
     }
 
     Scaffold(

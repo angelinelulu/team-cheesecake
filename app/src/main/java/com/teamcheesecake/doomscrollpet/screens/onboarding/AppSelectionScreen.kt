@@ -1,5 +1,6 @@
 package com.teamcheesecake.doomscrollpet.screens.onboarding
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,6 +18,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.teamcheesecake.doomscrollpet.model.AppOption
+import com.teamcheesecake.doomscrollpet.ui.theme.ButtonGreen
+import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
 
 /**
  * Shared by both the "avoid" and "do more of" onboarding steps — same
@@ -36,6 +39,7 @@ fun AppSelectionScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(YellowMain)
             .padding(24.dp),
     ) {
         Text(text = title, style = MaterialTheme.typography.titleLarge)
@@ -64,6 +68,7 @@ fun AppSelectionScreen(
 
         Button(
             onClick = onNext,
+            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = ButtonGreen),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 16.dp),

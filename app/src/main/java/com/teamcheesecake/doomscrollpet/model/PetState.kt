@@ -25,6 +25,22 @@ data class Friend(
         get() = distanceMeters != null && distanceMeters <= NEARBY_THRESHOLD_METERS
 }
 
+/** Snapshot of a friend's pet, read live from their Firestore user document. */
+data class FriendPetStatus(
+    val code: String,
+    val ownerName: String,
+    val animal: Animal,
+    val health: Int,
+) {
+    val mood: PetMood
+        get() = when {
+            health >= 70 -> PetMood.THRIVING
+            health >= 40 -> PetMood.OKAY
+            health >= 15 -> PetMood.SICK
+            else -> PetMood.CRITICAL
+        }
+}
+
 data class AppOption(val displayName: String, val packageName: String)
 
 // Best-effort package names for the common/global build of each app — a real version would
@@ -69,6 +85,7 @@ data class PetUiState(
     val badges: List<String> = emptyList(),
     val incomingRequests: List<Friend>,
     val outgoingRequests: List<Friend>,
+    val friendPetStatuses: List<FriendPetStatus> = emptyList(),
 ) {
     val mood: PetMood
         get() = when {

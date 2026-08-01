@@ -20,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import com.teamcheesecake.doomscrollpet.ui.theme.ButtonGreen
+import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
 import com.teamcheesecake.doomscrollpet.model.Animal
 
 @Composable
@@ -32,6 +34,7 @@ fun AnimalScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(YellowMain)
             .padding(24.dp),
     ) {
         Text(text = "Choose your pet", style = MaterialTheme.typography.titleLarge)
@@ -69,6 +72,7 @@ fun AnimalScreen(
 
         Button(
             onClick = onNext,
+            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = ButtonGreen),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 16.dp),

@@ -3,6 +3,7 @@ package com.teamcheesecake.doomscrollpet.screens.onboarding
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,6 +19,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 import com.teamcheesecake.doomscrollpet.R
+import com.teamcheesecake.doomscrollpet.ui.theme.ButtonGreen
+import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
 
 @Composable
 fun SignInScreen(onSignInSuccess: (uid: String) -> Unit)  {
@@ -71,7 +74,7 @@ fun SignInScreen(onSignInSuccess: (uid: String) -> Unit)  {
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
+        modifier = Modifier.fillMaxSize().background(YellowMain).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -81,7 +84,10 @@ fun SignInScreen(onSignInSuccess: (uid: String) -> Unit)  {
         if (isLoading) {
             CircularProgressIndicator()
         } else {
-            Button(onClick = { launcher.launch(googleSignInClient.signInIntent) }) {
+            Button(
+                onClick = { launcher.launch(googleSignInClient.signInIntent) },
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = ButtonGreen)
+            ) {
                 Text("Sign in with Google")
             }
         }

@@ -35,6 +35,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     private var myLat: Double? = null
     private var myLng: Double? = null
     private var uid: String? = null
+    private var isAccountLoaded = false
 
     var uiState by mutableStateOf(
         PetUiState(
@@ -47,7 +48,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     )
         private set
 
-    // Onboarding & Profile
+    // --- Onboarding & Profile Loading ---
 
     fun loadOrCreateAccountCode(userId: String) {
         uid = userId
@@ -65,18 +66,33 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                 val savedAnimal = snapshot.getString("animal")?.let { name ->
                     runCatching { Animal.valueOf(name) }.getOrNull()
                 }
+
+                val savedAvoidApps = (snapshot.get("avoidApps") as? List<*>)
+                    ?.filterIsInstance<String>()?.toSet() ?: uiState.avoidApps
+                val savedMoreApps = (snapshot.get("moreApps") as? List<*>)
+                    ?.filterIsInstance<String>()?.toSet() ?: uiState.moreApps
+
+                val savedDoomscroll = (snapshot.getLong("doomscrollMinutesToday") ?: 0L).toInt()
+                val savedMoreApp = (snapshot.getLong("moreAppMinutesToday") ?: 0L).toInt()
+
+                // Immediately populate UI state directly from Firestore snapshot
                 uiState = uiState.copy(
                     myCode = code,
                     ownerName = snapshot.getString("ownerName") ?: uiState.ownerName,
                     animal = savedAnimal ?: uiState.animal,
+                    avoidApps = savedAvoidApps,
+                    moreApps = savedMoreApps,
                     distanceMetersToday = snapshot.getDouble("distanceMetersToday") ?: 0.0,
-                    doomscrollMinutesToday = (snapshot.getLong("doomscrollMinutesToday") ?: 0L).toInt(),
-                    moreAppMinutesToday = (snapshot.getLong("moreAppMinutesToday") ?: 0L).toInt(),
+                    doomscrollMinutesToday = savedDoomscroll,
+                    moreAppMinutesToday = savedMoreApp,
                     streakDays = (snapshot.getLong("streakDays") ?: 0L).toInt(),
                     proximityBonus = (snapshot.getLong("proximityBonus") ?: 0L).toInt(),
                     onboardingComplete = snapshot.getBoolean("onboardingComplete") ?: false,
                 )
+
+                isAccountLoaded = true
                 recomputeHealth()
+                refreshScreenTime() // Safe to check local device time now
                 startListeningToFriendLinks()
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load or create account code", e)
@@ -102,19 +118,29 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggleAvoidApp(app: String) {
         uiState = uiState.copy(avoidApps = uiState.avoidApps.toggle(app))
+        saveSelectedAppsToFirestore()
         refreshScreenTime()
     }
 
     fun toggleMoreApp(app: String) {
         uiState = uiState.copy(moreApps = uiState.moreApps.toggle(app))
+        saveSelectedAppsToFirestore()
         refreshScreenTime()
     }
 
+    private fun saveSelectedAppsToFirestore() {
+        val userId = uid ?: return
+        val data = mapOf(
+            "avoidApps" to uiState.avoidApps.toList(),
+            "moreApps" to uiState.moreApps.toList()
+        )
+        db.collection("users").document(userId)
+            .set(data, SetOptions.merge())
+            .addOnFailureListener { e -> Log.e(TAG, "Failed to save app selections", e) }
+    }
+
     fun completeOnboarding() {
-        val userId = uid ?: run {
-            Log.w(TAG, "completeOnboarding called before uid was set — not saved")
-            return
-        }
+        val userId = uid ?: return
         uiState = uiState.copy(onboardingComplete = true)
         db.collection("users").document(userId)
             .set(mapOf("onboardingComplete" to true), SetOptions.merge())
@@ -124,33 +150,25 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     private fun Set<String>.toggle(item: String): Set<String> =
         if (contains(item)) this - item else this + item
 
-    // Direct Doomscroll Updates
-
-    /** Explicitly set today's doomscroll minutes. Recomputes health and updates Firestore. */
-    fun setDoomscrollMinutes(minutes: Int) {
-        uiState = uiState.copy(doomscrollMinutesToday = minutes.coerceAtLeast(0))
-        recomputeHealth()
-    }
-
-    /** Add or subtract minutes from today's doomscroll total. */
-    fun addDoomscrollMinutes(deltaMinutes: Int) {
-        val newTotal = (uiState.doomscrollMinutesToday + deltaMinutes).coerceAtLeast(0)
-        uiState = uiState.copy(doomscrollMinutesToday = newTotal)
-        recomputeHealth()
-    }
-
-    // Screen Time & Health
+    // --- Screen Time & Health ---
 
     fun refreshScreenTime() {
-        if (!screenTimeRepository.hasUsageAccess()) {
-            uiState = uiState.copy(screenTimeConnected = false)
+        // Prevent clearing database stats before profile finishes loading
+        if (!isAccountLoaded || !screenTimeRepository.hasUsageAccess()) {
+            uiState = uiState.copy(screenTimeConnected = screenTimeRepository.hasUsageAccess())
             return
         }
-        val avoidMinutes = screenTimeRepository.getTodayUsageMinutes(uiState.avoidApps).values.sum()
-        val moreMinutes = screenTimeRepository.getTodayUsageMinutes(uiState.moreApps).values.sum()
+
+        val avoidMinutes = screenTimeRepository.getTodayUsageMinutes(uiState.avoidApps).values.sum().toInt()
+        val moreMinutes = screenTimeRepository.getTodayUsageMinutes(uiState.moreApps).values.sum().toInt()
+
+        // Use maxOf to ensure saved time is preserved while local device time catches up
+        val updatedDoomscroll = maxOf(uiState.doomscrollMinutesToday, avoidMinutes)
+        val updatedMoreApp = maxOf(uiState.moreAppMinutesToday, moreMinutes)
+
         uiState = uiState.copy(
-            doomscrollMinutesToday = avoidMinutes.toInt(),
-            moreAppMinutesToday = moreMinutes.toInt(),
+            doomscrollMinutesToday = updatedDoomscroll,
+            moreAppMinutesToday = updatedMoreApp,
             screenTimeConnected = true,
         )
         recomputeHealth()
@@ -168,6 +186,8 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun syncStatsToFirestore() {
         val userId = uid ?: return
+        if (!isAccountLoaded) return
+
         val data = mapOf(
             "doomscrollMinutesToday" to uiState.doomscrollMinutesToday,
             "moreAppMinutesToday" to uiState.moreAppMinutesToday,
@@ -182,7 +202,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
             .addOnFailureListener { e -> Log.e(TAG, "Failed to sync stats", e) }
     }
 
-    // Friends Flow
+    // --- Friends Flow ---
 
     fun sendFriendRequest(code: String) {
         val myCode = uiState.myCode
@@ -223,7 +243,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // Location & Distance
+    // --- Location & Distance ---
 
     fun refreshMyLocation() {
         viewModelScope.launch {

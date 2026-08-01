@@ -2,6 +2,7 @@ package com.teamcheesecake.doomscrollpet.screens.onboarding
 
 import android.content.Intent
 import android.provider.Settings
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,6 +22,8 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.teamcheesecake.doomscrollpet.ui.theme.ButtonGreen
+import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
 
 /**
  * Screen time is a special Android permission (opens system settings, we re-check on resume
@@ -48,6 +51,7 @@ fun ConnectScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(YellowMain)
             .padding(24.dp),
     ) {
         Text(text = "Connect your data", style = MaterialTheme.typography.titleLarge)
@@ -67,6 +71,7 @@ fun ConnectScreen(
 
         Button(
             onClick = onFinish,
+            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = ButtonGreen),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 24.dp),
@@ -96,7 +101,10 @@ private fun ConnectRow(
                 Text(text = title, style = MaterialTheme.typography.bodyLarge)
                 Text(text = description, style = MaterialTheme.typography.labelSmall)
             }
-            Button(onClick = onClick) {
+            Button(
+                onClick = onClick,
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = ButtonGreen)
+            ) {
                 Text(if (connected) "Connected ✓" else buttonLabel)
             }
         }

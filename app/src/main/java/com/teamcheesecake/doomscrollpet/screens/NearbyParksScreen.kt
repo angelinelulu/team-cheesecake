@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.teamcheesecake.doomscrollpet.ui.theme.YellowBack
 import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
 
 data class NearbyPark(
@@ -38,7 +39,7 @@ fun NearbyParksScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(YellowMain)
+            .background(YellowBack)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -55,7 +56,10 @@ fun NearbyParksScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             items(NEARBY_PARKS) { park ->
-                Card(modifier = Modifier.fillMaxWidth()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = YellowMain)
+                ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.teamcheesecake.doomscrollpet.model.PetMood
 import com.teamcheesecake.doomscrollpet.model.PetUiState
+import java.util.Locale
 import com.teamcheesecake.doomscrollpet.ui.theme.YellowBack
 import androidx.compose.ui.draw.clip
 
@@ -79,6 +80,16 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
                 }
             }
 
+        Text(text = "Doomscroll today: ${state.doomscrollMinutesToday} / ${state.doomscrollLimitMinutes} min")
+        Text(text = "Good-app time today: ${state.moreAppMinutesToday} min")
+        Text(text = "Distance today: ${formatKm(state.distanceMetersToday)} km")
+        Text(text = "Streak: ${state.streakDays} days")
+
+        if (!state.screenTimeConnected) {
+            Text(
+                text = "Not connected: screen time",
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(top = 8.dp),
             Spacer(modifier = Modifier.height(16.dp))
 
             // Hearts row (based on health)
@@ -155,6 +166,7 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
     }
 }
 
+private fun formatKm(meters: Double): String = String.format(Locale.US, "%.2f", meters / 1000.0)
 @Composable
 private fun ActionIcon(label: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {

@@ -52,18 +52,17 @@ data class PetUiState(
     val animal: Animal = Animal.CAT,
     val avoidApps: Set<String> = emptySet(), // package names
     val moreApps: Set<String> = emptySet(), // package names
-    val healthAppConnected: Boolean = false,
     val screenTimeConnected: Boolean = false,
     val onboardingComplete: Boolean = false,
 
     // Pet / gameplay — doomscrollMinutesToday and moreAppMinutesToday come from
-    // UsageStatsManager, stepsToday from Health Connect, once connected.
+    // UsageStatsManager, distanceMetersToday accumulated from GPS location updates.
     val health: Int = 80, // 0-100
     val streakDays: Int = 0,
     val doomscrollMinutesToday: Int = 0,
     val doomscrollLimitMinutes: Int = 60,
     val moreAppMinutesToday: Int = 0,
-    val stepsToday: Long = 0,
+    val distanceMetersToday: Double = 0.0,
     val proximityBonus: Int = 0, // accumulates from time spent near friends today
     val myCode: String = "",
     val friends: List<Friend> = emptyList(),

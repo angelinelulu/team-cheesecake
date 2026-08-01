@@ -246,6 +246,7 @@ private fun MainAppScreen(petViewModel: PetViewModel, onNavigateToProfile: () ->
                 myCode = state.myCode,
                 onSendFriendRequest = petViewModel::sendFriendRequest,
                 onNavigateToProfile = onNavigateToProfile,
+                getCurrentLocation = petViewModel::getCurrentLocation,
                 modifier = Modifier.padding(innerPadding),
             )
             1 -> FriendsScreen(

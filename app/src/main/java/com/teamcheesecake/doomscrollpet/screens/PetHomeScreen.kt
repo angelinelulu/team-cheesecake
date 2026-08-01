@@ -32,6 +32,13 @@ import androidx.compose.ui.unit.dp
 import com.teamcheesecake.doomscrollpet.model.PetMood
 import com.teamcheesecake.doomscrollpet.model.PetUiState
 import com.teamcheesecake.doomscrollpet.ui.theme.YellowBack
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
+import androidx.compose.foundation.clickable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 @Composable
@@ -40,10 +47,15 @@ fun PetHomeScreen(
     myCode: String,
     onSendFriendRequest: (String) -> Unit,
     onNavigateToProfile: () -> Unit,
+    onFeedClick: () -> Unit = {},
+    onWaterClick: () -> Unit = {},
+    getCurrentLocation: suspend () -> Pair<Double, Double>?,
     modifier: Modifier = Modifier,
 ) {
     var profileMenuExpanded by remember { mutableStateOf(false) }
     var showAddFriendDialog by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     Column(modifier = modifier.fillMaxSize()) {
 
@@ -200,9 +212,40 @@ fun PetHomeScreen(
                 .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
-            ActionIcon(label = "Food")
-            ActionIcon(label = "Water")
-            ActionIcon(label = "Exercise")
+            ActionIcon(label = "Food", onClick = onFeedClick)
+            ActionIcon(label = "Water", onClick = onWaterClick)
+            ActionIcon(
+                label = "Exercise",
+                onClick = {
+                    scope.launch {
+                        val latLng = getCurrentLocation()
+                        if (latLng == null) {
+                            Toast.makeText(
+                                context,
+                                "Couldn't get your location — check location permission",
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                            return@launch
+                        }
+                        val (lat, lng) = latLng
+                        val mapsIntent = Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse("geo:$lat,$lng?q=parks+near+me"),
+                        ).apply { setPackage("com.google.android.apps.maps") }
+
+                        if (mapsIntent.resolveActivity(context.packageManager) != null) {
+                            context.startActivity(mapsIntent)
+                        } else {
+                            context.startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("https://www.google.com/maps/search/parks/@$lat,$lng,14z"),
+                                ),
+                            )
+                        }
+                    }
+                },
+            )
         }
     }
 
@@ -269,11 +312,12 @@ private fun AddFriendDialog(
 private fun formatKm(meters: Double): String = String.format(Locale.US, "%.2f", meters / 1000.0)
 
 @Composable
-private fun ActionIcon(label: String) {
+private fun ActionIcon(label: String, onClick: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
                 .size(56.dp)
+                .clickable(onClick = onClick)
                 .background(Color.White, RoundedCornerShape(8.dp)),
         )
         Text(text = label, style = MaterialTheme.typography.labelSmall)

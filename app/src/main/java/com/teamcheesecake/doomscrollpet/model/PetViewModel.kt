@@ -253,6 +253,8 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    suspend fun getCurrentLocation(): Pair<Double, Double>? = locationRepository.getCurrentLatLng()
+
     /**
      * Fetches this device's current location and accumulates distance traveled since the last
      * fix (filtering out small GPS jitter). Purely local — nothing here is published or shared.

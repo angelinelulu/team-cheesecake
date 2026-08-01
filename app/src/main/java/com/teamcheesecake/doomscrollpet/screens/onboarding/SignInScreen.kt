@@ -9,14 +9,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.common.api.ApiException
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
-import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.firestore.FirebaseFirestore
 import com.teamcheesecake.doomscrollpet.R
 
 @Composable
@@ -43,11 +43,11 @@ fun SignInScreen(onSignInSuccess: (uid: String) -> Unit)  {
                 val account = task.getResult(ApiException::class.java)
                 val credential = GoogleAuthProvider.getCredential(account.idToken, null)
 
-                Firebase.auth.signInWithCredential(credential)
+                FirebaseAuth.getInstance().signInWithCredential(credential)
                     .addOnCompleteListener { authResult ->
                         isLoading = false
                         if (authResult.isSuccessful) {
-                            val user = Firebase.auth.currentUser
+                            val user = FirebaseAuth.getInstance().currentUser
                             user?.let {
                                 createOrUpdateUserDoc(it.uid, it.email, it.displayName)
                                 onSignInSuccess(it.uid)
@@ -87,7 +87,7 @@ fun SignInScreen(onSignInSuccess: (uid: String) -> Unit)  {
 }
 
 private fun createOrUpdateUserDoc(uid: String, email: String?, displayName: String?) {
-    val userDoc = Firebase.firestore.collection("users").document(uid)
+    val userDoc = FirebaseFirestore.getInstance().collection("users").document(uid)
     val data = mapOf(
         "email" to email,
         "displayName" to displayName,

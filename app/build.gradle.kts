@@ -1,6 +1,9 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.gms.google-services")
 }
 
@@ -28,20 +31,14 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     buildFeatures {
         compose = true
     }
+}
 
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
-    }
-
-    dependencies {
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 
@@ -59,7 +56,6 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.7.7")
 
-    // Firestore only — just for storing/reading friend locations, no Auth/Messaging.
     implementation(platform("com.google.firebase:firebase-bom:34.17.0"))
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-auth")

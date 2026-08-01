@@ -63,6 +63,7 @@ fun PetHomeScreen(
 ) {
     var profileMenuExpanded by remember { mutableStateOf(false) }
     var showAddFriendDialog by remember { mutableStateOf(false) }
+    var showPopup by remember { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxSize()) {
 
@@ -89,10 +90,17 @@ fun PetHomeScreen(
                     fontWeight = FontWeight.Bold,
                 )
 
-                Box {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     IconButton(onClick = { profileMenuExpanded = true }) {
                         Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
                     }
+                    Image(
+                        painter = painterResource(id = R.drawable.swap_pets_button),
+                        contentDescription = "Open popup",
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clickable { showPopup = true },
+                    )
                     DropdownMenu(
                         expanded = profileMenuExpanded,
                         onDismissRequest = { profileMenuExpanded = false },
@@ -186,7 +194,6 @@ fun PetHomeScreen(
                 text = "Badges",
                 fontWeight = FontWeight.Bold
             )
-
             if (!state.screenTimeConnected) {
                 Text(
                     text = "Not connected: screen time",
@@ -261,6 +268,19 @@ fun PetHomeScreen(
             onSubmit = { code ->
                 onSendFriendRequest(code)
                 showAddFriendDialog = false
+            },
+        )
+    }
+
+    if (showPopup) {
+        AlertDialog(
+            onDismissRequest = { showPopup = false },
+            title = { Text("Popup Title") },
+            text = { Text("Whatever content you want here.") },
+            confirmButton = {
+                TextButton(onClick = { showPopup = false }) {
+                    Text("OK")
+                }
             },
         )
     }

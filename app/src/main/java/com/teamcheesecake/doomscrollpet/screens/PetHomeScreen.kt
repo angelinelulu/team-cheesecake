@@ -46,6 +46,8 @@ import com.teamcheesecake.doomscrollpet.R
 
 @Composable
 fun PetActionBottomBar(
+    canFood: Boolean,
+    canWater: Boolean,
     onFood: () -> Unit,
     onWater: () -> Unit,
     onExercise: () -> Unit
@@ -57,8 +59,18 @@ fun PetActionBottomBar(
             .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
-        ActionIcon(label = "Food", iconRes = R.drawable.feed_icon, onClick = onFood)
-        ActionIcon(label = "Water", iconRes = R.drawable.water_icon, onClick = onWater)
+        ActionIcon(
+            label = "Food",
+            iconRes = R.drawable.feed_icon,
+            enabled = canFood,
+            onClick = onFood
+        )
+        ActionIcon(
+            label = "Water",
+            iconRes = R.drawable.water_icon,
+            enabled = canWater,
+            onClick = onWater
+        )
         ActionIcon(label = "Exercise", iconRes = R.drawable.exercise_icon, onClick = onExercise)
     }
 }
@@ -328,24 +340,37 @@ private fun AddFriendDialog(
 private fun formatKm(meters: Double): String = String.format(Locale.US, "%.2f", meters / 1000.0)
 
 @Composable
-private fun ActionIcon(label: String, iconRes: Int, onClick: () -> Unit) {
+private fun ActionIcon(
+    label: String,
+    iconRes: Int,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { onClick() }
+        modifier = Modifier.clickable(enabled = enabled) { onClick() }
     ) {
         Box(
             modifier = Modifier
                 .size(56.dp)
-                .background(YellowBack, RoundedCornerShape(8.dp)),
+                .background(
+                    if (enabled) YellowBack else Color.Gray.copy(alpha = 0.3f),
+                    RoundedCornerShape(8.dp)
+                ),
             contentAlignment = Alignment.Center,
         ) {
             Image(
                 painter = painterResource(id = iconRes),
                 contentDescription = label,
                 modifier = Modifier.size(48.dp),
+                alpha = if (enabled) 1f else 0.5f
             )
         }
-        Text(text = label, style = MaterialTheme.typography.labelSmall)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (enabled) Color.Unspecified else Color.Gray
+        )
     }
 }
 

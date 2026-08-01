@@ -16,11 +16,14 @@ import com.teamcheesecake.doomscrollpet.data.LocationRepository
 import com.teamcheesecake.doomscrollpet.data.ScreenTimeRepository
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.util.Calendar
 
 private const val BASE_HEALTH = 80
 private const val AVOID_MINUTE_PENALTY = 2
 private const val MORE_MINUTE_BONUS = 1
 private const val METERS_PER_HEALTH_POINT = 100
+private const val FOOD_HEALTH_BONUS = 10
+private const val WATER_HEALTH_BONUS = 5
 
 // Ignore GPS deltas smaller than this between fixes — otherwise standing still slowly racks up
 // "distance" from ordinary GPS jitter.
@@ -86,6 +89,10 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     moreAppMinutesToday = (snapshot.getLong("moreAppMinutesToday") ?: 0L).toInt(),
                     streakDays = (snapshot.getLong("streakDays") ?: 0L).toInt(),
                     proximityBonus = (snapshot.getLong("proximityBonus") ?: 0L).toInt(),
+                    careBonus = (snapshot.getLong("careBonus") ?: 0L).toInt(),
+                    lastFedTimestamp = snapshot.getLong("lastFedTimestamp") ?: 0L,
+                    lastWaterTimestamp = snapshot.getLong("lastWaterTimestamp") ?: 0L,
+                    lastStatsUpdateMillis = snapshot.getTimestamp("lastStatsUpdate")?.toDate()?.time ?: 0L,
                     onboardingComplete = snapshot.getBoolean("onboardingComplete") ?: false,
                 )
                 recomputeHealth()
@@ -158,11 +165,14 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun recomputeHealth() {
+        checkDailyReset()
         val computed = BASE_HEALTH -
                 uiState.doomscrollMinutesToday * AVOID_MINUTE_PENALTY +
                 uiState.moreAppMinutesToday * MORE_MINUTE_BONUS +
                 (uiState.distanceMetersToday / METERS_PER_HEALTH_POINT).toInt() +
-                uiState.proximityBonus
+                uiState.proximityBonus +
+                uiState.careBonus
+
         uiState = uiState.copy(health = computed.coerceIn(0, 100))
         syncStatsToFirestore()
     }
@@ -174,6 +184,11 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
      */
     private fun syncStatsToFirestore() {
         val userId = uid ?: return
+        val now = com.google.firebase.Timestamp.now()
+        
+        // Update local state first so checkDailyReset has the latest baseline
+        uiState = uiState.copy(lastStatsUpdateMillis = now.toDate().time)
+
         val data = mapOf(
             "doomscrollMinutesToday" to uiState.doomscrollMinutesToday,
             "moreAppMinutesToday" to uiState.moreAppMinutesToday,
@@ -181,13 +196,36 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
             "streakDays" to uiState.streakDays,
             "health" to uiState.health,
             "proximityBonus" to uiState.proximityBonus,
-            "lastStatsUpdate" to com.google.firebase.Timestamp.now(),
+            "careBonus" to uiState.careBonus,
+            "lastFedTimestamp" to uiState.lastFedTimestamp,
+            "lastWaterTimestamp" to uiState.lastWaterTimestamp,
+            "lastStatsUpdate" to now,
         )
         db.collection("users").document(userId)
             .set(data, SetOptions.merge())
             .addOnFailureListener { e ->
                 Log.e(TAG, "Failed to sync stats", e)
             }
+    }
+
+    private fun checkDailyReset() {
+        val lastUpdate = uiState.lastStatsUpdateMillis ?: return
+        val now = System.currentTimeMillis()
+
+        val calLast = Calendar.getInstance().apply { timeInMillis = lastUpdate }
+        val calNow = Calendar.getInstance().apply { timeInMillis = now }
+
+        if (calLast.get(Calendar.DAY_OF_YEAR) != calNow.get(Calendar.DAY_OF_YEAR) ||
+            calLast.get(Calendar.YEAR) != calNow.get(Calendar.YEAR)) {
+            // New day: reset "Today" accumulators
+            uiState = uiState.copy(
+                doomscrollMinutesToday = 0,
+                moreAppMinutesToday = 0,
+                distanceMetersToday = 0.0,
+                proximityBonus = 0,
+                careBonus = 0
+            )
+        }
     }
 
     // Friends — request / accept flow (no location involved)
@@ -326,11 +364,23 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun feedPet() {
-        uiState = uiState.copy(health = (uiState.health + 5).coerceAtMost(100))
+        if (uiState.canFeedTreat) {
+            uiState = uiState.copy(
+                lastFedTimestamp = System.currentTimeMillis(),
+                careBonus = uiState.careBonus + FOOD_HEALTH_BONUS
+            )
+            recomputeHealth()
+        }
     }
 
     fun waterPet() {
-        uiState = uiState.copy(health = (uiState.health + 2).coerceAtMost(100))
+        if (uiState.canGiveWater) {
+            uiState = uiState.copy(
+                lastWaterTimestamp = System.currentTimeMillis(),
+                careBonus = uiState.careBonus + WATER_HEALTH_BONUS
+            )
+            recomputeHealth()
+        }
     }
 
     fun exercisePet() {

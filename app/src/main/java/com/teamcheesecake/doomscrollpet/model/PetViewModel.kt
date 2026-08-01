@@ -39,6 +39,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     private val friendRepository = FriendRepository()
 
     private var friendLinksListener: ListenerRegistration? = null
+    private var friendStatsListener: ListenerRegistration? = null
 
     private var myLat: Double? = null
     private var myLng: Double? = null
@@ -250,7 +251,40 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     Friend(code = it.otherCode(myCode), name = it.otherName(myCode))
                 },
             )
+            refreshFriendStatsListener()
         }
+    }
+
+    /**
+     * Listens to the Firestore user docs of everyone in uiState.friends, pulling their animal type
+     * and live health. Restarted every time the friends list changes. Firestore's whereIn caps at
+     * 30 values — fine for now, but if you expect more than 30 friends this needs batching.
+     */
+    private fun refreshFriendStatsListener() {
+        friendStatsListener?.remove()
+        val codes = uiState.friends.map { it.code }
+        if (codes.isEmpty()) {
+            uiState = uiState.copy(friendPetStatuses = emptyList())
+            return
+        }
+        friendStatsListener = db.collection("users")
+            .whereIn("myCode", codes.take(30))
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || snapshot == null) {
+                    Log.e(TAG, "Failed to listen to friend stats", error)
+                    return@addSnapshotListener
+                }
+                val statuses = snapshot.documents.mapNotNull { doc ->
+                    val code = doc.getString("myCode") ?: return@mapNotNull null
+                    val ownerName = doc.getString("ownerName") ?: code
+                    val animal = doc.getString("animal")
+                        ?.let { runCatching { Animal.valueOf(it) }.getOrNull() }
+                        ?: Animal.CAT
+                    val health = (doc.getLong("health") ?: 80L).toInt()
+                    FriendPetStatus(code = code, ownerName = ownerName, animal = animal, health = health)
+                }
+                uiState = uiState.copy(friendPetStatuses = statuses)
+            }
     }
 
     /** Exposes a one-off location fix for UI actions (e.g. finding nearby parks). Returns null if
@@ -306,5 +340,6 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     override fun onCleared() {
         super.onCleared()
         friendLinksListener?.remove()
+        friendStatsListener?.remove()
     }
 }

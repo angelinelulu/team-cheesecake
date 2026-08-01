@@ -90,17 +90,10 @@ fun PetHomeScreen(
                     fontWeight = FontWeight.Bold,
                 )
 
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box {
                     IconButton(onClick = { profileMenuExpanded = true }) {
                         Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
                     }
-                    Image(
-                        painter = painterResource(id = R.drawable.swap_pets_button),
-                        contentDescription = "Open popup",
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clickable { showPopup = true },
-                    )
                     DropdownMenu(
                         expanded = profileMenuExpanded,
                         onDismissRequest = { profileMenuExpanded = false },
@@ -143,16 +136,30 @@ fun PetHomeScreen(
                 .padding(16.dp)
                 .background(YellowMain),
         ) {
-            // Pet Park icon row
+            // Pet Park + Swap Pet buttons, side by side and aligned
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onNavigateToPark),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.clickable(onClick = onNavigateToPark),
+                ) {
                     Text(text = "\uD83C\uDF33", style = MaterialTheme.typography.headlineSmall)
                     Text(text = "Pet Park", style = MaterialTheme.typography.labelSmall)
+                }
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.clickable { showPopup = true },
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.swap_pets_button),
+                        contentDescription = "Swap pet",
+                        modifier = Modifier.size(48.dp),
+                    )
+                    Text(text = "Swap Pet", style = MaterialTheme.typography.labelSmall)
                 }
             }
 
@@ -194,6 +201,7 @@ fun PetHomeScreen(
                 text = "Badges",
                 fontWeight = FontWeight.Bold
             )
+
             if (!state.screenTimeConnected) {
                 Text(
                     text = "Not connected: screen time",

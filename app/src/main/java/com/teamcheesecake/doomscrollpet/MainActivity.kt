@@ -102,6 +102,7 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
 
     val signOut: () -> Unit = {
         val context = navController.context
+        petViewModel.clearState()
         FirebaseManager.signOut(context) {
             navController.navigate(Routes.SIGN_IN) {
                 popUpTo(0) { inclusive = true }

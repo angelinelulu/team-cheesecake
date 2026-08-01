@@ -59,7 +59,7 @@ val MORE_APP_OPTIONS = listOf(
     AppOption("Duolingo", "com.duolingo"),
     AppOption("Books", "com.google.android.apps.books"),
     AppOption("Fitness", "com.google.android.apps.fitness"),
-    AppOption("Calm", "com.calm.android"),
+    AppOption("Google", "com.google.android.googlequicksearchbox"),
 )
 
 data class PetUiState(

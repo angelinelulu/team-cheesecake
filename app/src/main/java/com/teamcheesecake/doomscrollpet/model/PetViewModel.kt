@@ -72,7 +72,14 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         "X" to "com.twitter.android",
         "Facebook" to "com.facebook.katana",
         "Reddit" to "com.reddit.frontpage",
-        "Snapchat" to "com.snapchat.android"
+        "Snapchat" to "com.snapchat.android",
+        // Good app mappings
+        "Notes" to "com.google.android.keep",
+        "Canvas" to "com.instructure.candroid",
+        "Duolingo" to "com.duolingo",
+        "Books" to "com.google.android.apps.books",
+        "Fitness" to "com.google.android.apps.fitness",
+        "Google" to "com.google.android.googlequicksearchbox"
     )
 
     private fun Set<String>.toPackageNames(): Set<String> {

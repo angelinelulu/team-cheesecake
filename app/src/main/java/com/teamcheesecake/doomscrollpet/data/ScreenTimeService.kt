@@ -44,7 +44,7 @@ class ScreenTimeService : Service() {
         "Duolingo" to "com.duolingo",
         "Books" to "com.google.android.apps.books",
         "Fitness" to "com.google.android.apps.fitness",
-        "Calm" to "com.calm.android"
+        "Google" to "com.google.android.googlequicksearchbox"
     )
 
     private fun Set<String>.toPackageNames(): Set<String> {

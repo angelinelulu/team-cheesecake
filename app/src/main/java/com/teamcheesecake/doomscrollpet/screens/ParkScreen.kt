@@ -3,9 +3,9 @@ package com.teamcheesecake.doomscrollpet.screens
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
@@ -15,8 +15,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -28,80 +28,22 @@ import com.teamcheesecake.doomscrollpet.R
 import com.teamcheesecake.doomscrollpet.model.Animal
 import com.teamcheesecake.doomscrollpet.model.FriendPetStatus
 
-private val SkyGreen = Color(0xFFD7E8C9)
-private val GrassGreen = Color(0xFF8FBF6B)
-private val RowHeight = 220.dp
-private val HeaderHeight = 160.dp
-
 @Composable
 fun ParkScreen(
     friendPetStatuses: List<FriendPetStatus>,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val rows = (friendPetStatuses.size + 1) / 2
-    val contentHeight = HeaderHeight + RowHeight * rows.coerceAtLeast(1) + 60.dp
-
     Box(modifier = modifier.fillMaxSize()) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .height(contentHeight)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(SkyGreen, SkyGreen, GrassGreen),
-                        startY = 0f,
-                    ),
-                ),
-        ) {
-            // --- Hanging sign ---
-            Column(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 48.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .background(Color(0xFFDDBB88), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 32.dp, vertical = 12.dp),
-                ) {
-                    Text(
-                        "Pet Park",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF3B5D3B),
-                    )
-                }
-            }
+        // --- Full-screen background scene ---
+        Image(
+            painter = painterResource(id = R.drawable.park_background),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
 
-            if (friendPetStatuses.isEmpty()) {
-                Text(
-                    "No friends yet — add some from your profile!",
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(24.dp),
-                )
-            } else {
-                friendPetStatuses.forEachIndexed { index, friend ->
-                    val isLeftColumn = index % 2 == 0
-                    val row = index / 2
-                    ScatteredPet(
-                        friend = friend,
-                        modifier = Modifier
-                            .align(if (isLeftColumn) Alignment.TopStart else Alignment.TopEnd)
-                            .padding(
-                                start = if (isLeftColumn) 32.dp else 0.dp,
-                                end = if (!isLeftColumn) 32.dp else 0.dp,
-                                top = HeaderHeight + RowHeight * row,
-                            ),
-                    )
-                }
-            }
-        }
-
-        // Back button stays fixed on top, not part of the scrolling scene.
+        // --- Back button, fixed top-left ---
         IconButton(
             onClick = onBack,
             modifier = Modifier
@@ -110,15 +52,63 @@ fun ParkScreen(
         ) {
             Icon(Icons.Default.ArrowBack, contentDescription = "Back")
         }
+
+        // --- Sign + banner, fixed near the top ---
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 48.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(
+                modifier = Modifier
+                    .background(Color(0xFFDDBB88), RoundedCornerShape(12.dp))
+                    .padding(horizontal = 32.dp, vertical = 12.dp),
+            ) {
+                Text(
+                    "Pet Park",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF3B5D3B),
+                )
+            }
+            Image(
+                painter = painterResource(id = R.drawable.pet_park_banner),
+                contentDescription = null,
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .fillMaxWidth(0.8f),
+            )
+        }
+
+        // --- Pets, pinned to the bottom ---
+        if (friendPetStatuses.isEmpty()) {
+            Text(
+                "No friends yet — add some from your profile!",
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 48.dp)
+                    .padding(horizontal = 24.dp),
+            )
+        } else {
+            LazyRow(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 32.dp),
+                contentPadding = PaddingValues(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                items(friendPetStatuses) { friend ->
+                    ScatteredPet(friend)
+                }
+            }
+        }
     }
 }
 
 @Composable
-private fun ScatteredPet(friend: FriendPetStatus, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
+private fun ScatteredPet(friend: FriendPetStatus) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(contentAlignment = Alignment.Center) {
             Icon(
                 Icons.Default.Favorite,

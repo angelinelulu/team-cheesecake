@@ -8,21 +8,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -80,6 +67,8 @@ fun PetHomeScreen(
     state: PetUiState,
     myCode: String,
     onSendFriendRequest: (String) -> Unit,
+    onOpenSettings: () -> Unit = {},
+    onSignOut: () -> Unit,
     onNavigateToProfile: () -> Unit,
     onNavigateToPark: () -> Unit,
     modifier: Modifier = Modifier,
@@ -89,7 +78,7 @@ fun PetHomeScreen(
 
     Column(modifier = modifier.fillMaxSize()) {
 
-        // --- Top bar ---
+        // --- Top Bar ---
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -103,7 +92,7 @@ fun PetHomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = { /* TODO settings */ }) {
+                IconButton(onClick = onOpenSettings) {
                     Icon(Icons.Default.Settings, contentDescription = "Settings")
                 }
                 Text(
@@ -150,7 +139,7 @@ fun PetHomeScreen(
             )
         }
 
-        // --- Middle content area ---
+        // --- Middle Content Area ---
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -330,9 +319,7 @@ private fun AddFriendDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
+            TextButton(onClick = onDismiss) { Text("Cancel") }
         },
     )
 }

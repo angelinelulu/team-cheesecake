@@ -12,11 +12,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.teamcheesecake.doomscrollpet.model.Animal
 import com.teamcheesecake.doomscrollpet.model.PetMood
 import com.teamcheesecake.doomscrollpet.model.PetUiState
 import com.teamcheesecake.doomscrollpet.ui.theme.YellowBack
@@ -32,21 +34,15 @@ import androidx.compose.ui.res.painterResource
 import com.teamcheesecake.doomscrollpet.R
 import kotlinx.coroutines.delay
 
+private const val NEW_PET_UNLOCK_DELAY_MS = 10_000L
+private const val FULL_HEALTH = 100
+
 @Composable
 fun PetActionBottomBar(
-    state: PetUiState,
     onFood: () -> Unit,
     onWater: () -> Unit,
     onExercise: () -> Unit
 ) {
-    var currentTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(1000)
-            currentTime = System.currentTimeMillis()
-        }
-    }
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -54,35 +50,10 @@ fun PetActionBottomBar(
             .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
-        ActionIcon(
-            label = "Food",
-            iconRes = R.drawable.feed_icon,
-            enabled = state.canFeedTreat,
-            cooldownMillis = getCooldownMillis(state.lastFedTimestamp, currentTime),
-            onClick = onFood
-        )
-        ActionIcon(
-            label = "Water",
-            iconRes = R.drawable.water_icon,
-            enabled = state.canGiveWater,
-            cooldownMillis = getCooldownMillis(state.lastWaterTimestamp, currentTime),
-            onClick = onWater
-        )
+        ActionIcon(label = "Food", iconRes = R.drawable.feed_icon, onClick = onFood)
+        ActionIcon(label = "Water", iconRes = R.drawable.water_icon, onClick = onWater)
         ActionIcon(label = "Exercise", iconRes = R.drawable.exercise_icon, onClick = onExercise)
     }
-}
-
-private fun getCooldownMillis(lastTimestamp: Long, currentTime: Long): Long {
-    val cooldownPeriod = 24 * 60 * 60 * 1000L
-    val elapsed = currentTime - lastTimestamp
-    return if (elapsed < cooldownPeriod) cooldownPeriod - elapsed else 0L
-}
-
-private fun formatCooldown(millis: Long): String {
-    val totalSeconds = millis / 1000
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    return String.format(Locale.US, "%dh %dm", hours, minutes)
 }
 
 @Composable
@@ -94,11 +65,26 @@ fun PetHomeScreen(
     onSignOut: () -> Unit,
     onNavigateToProfile: () -> Unit,
     onNavigateToPark: () -> Unit,
+    onSwapAnimal: (Animal) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var profileMenuExpanded by remember { mutableStateOf(false) }
     var showAddFriendDialog by remember { mutableStateOf(false) }
     var showPopup by remember { mutableStateOf(false) }
+    var newPetUnlocked by remember { mutableStateOf(false) }
+    var showUnlockAnnouncement by remember { mutableStateOf(false) }
+
+    // Starts a 10s timer once health hits full. Resets (and re-locks) if health
+    // drops back down before the timer finishes.
+    LaunchedEffect(state.health) {
+        if (state.health >= FULL_HEALTH) {
+            delay(NEW_PET_UNLOCK_DELAY_MS)
+            newPetUnlocked = true
+            showUnlockAnnouncement = true
+        } else {
+            newPetUnlocked = false
+        }
+    }
 
     Column(modifier = modifier.fillMaxSize()) {
 
@@ -187,7 +173,9 @@ fun PetHomeScreen(
 
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable { showPopup = true },
+                    modifier = Modifier
+                        .clickable(enabled = newPetUnlocked) { showPopup = true }
+                        .alpha(if (newPetUnlocked) 1f else 0.4f),
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.swap_pets_button),
@@ -196,6 +184,15 @@ fun PetHomeScreen(
                     )
                     Text(text = "Swap Pet", style = MaterialTheme.typography.labelSmall)
                 }
+            }
+
+            if (newPetUnlocked) {
+                Text(
+                    text = "🎉 Your pet reached full health! You can add a new pet.",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -315,18 +312,83 @@ fun PetHomeScreen(
         )
     }
 
-    if (showPopup) {
+    if (showUnlockAnnouncement) {
         AlertDialog(
-            onDismissRequest = { showPopup = false },
-            title = { Text("Popup Title") },
-            text = { Text("Whatever content you want here.") },
+            onDismissRequest = { showUnlockAnnouncement = false },
+            title = { Text("New Pet Unlocked! \uD83C\uDF89") },
+            text = { Text("You've unlocked a new pet! Tap Swap Pet to choose which one to switch to.") },
             confirmButton = {
-                TextButton(onClick = { showPopup = false }) {
-                    Text("OK")
+                TextButton(onClick = {
+                    showUnlockAnnouncement = false
+                    showPopup = true
+                }) {
+                    Text("Choose Pet")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUnlockAnnouncement = false }) {
+                    Text("Later")
                 }
             },
         )
     }
+
+    if (showPopup) {
+        SwapPetDialog(
+            currentAnimal = state.animal,
+            onDismiss = { showPopup = false },
+            onSelectAnimal = { animal ->
+                onSwapAnimal(animal)
+                showPopup = false
+            },
+        )
+    }
+}
+
+@Composable
+private fun SwapPetDialog(
+    currentAnimal: Animal,
+    onDismiss: () -> Unit,
+    onSelectAnimal: (Animal) -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Choose your new pet") },
+        text = {
+            Column {
+                Animal.entries.forEach { animal ->
+                    val isCurrent = animal == currentAnimal
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = !isCurrent) { onSelectAnimal(animal) }
+                            .padding(vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(text = animal.emoji, style = MaterialTheme.typography.headlineSmall)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = animal.displayName,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
+                        )
+                        if (isCurrent) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "(current)",
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        },
+    )
 }
 
 @Composable
@@ -378,54 +440,24 @@ private fun AddFriendDialog(
 private fun formatKm(meters: Double): String = String.format(Locale.US, "%.2f", meters / 1000.0)
 
 @Composable
-private fun ActionIcon(
-    label: String,
-    iconRes: Int,
-    enabled: Boolean = true,
-    cooldownMillis: Long = 0,
-    onClick: () -> Unit
-) {
+private fun ActionIcon(label: String, iconRes: Int, onClick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable(enabled = enabled) { onClick() }
+        modifier = Modifier.clickable { onClick() }
     ) {
         Box(
             modifier = Modifier
                 .size(56.dp)
-                .background(
-                    if (enabled) YellowBack else Color.Gray.copy(alpha = 0.3f),
-                    RoundedCornerShape(8.dp)
-                ),
+                .background(YellowBack, RoundedCornerShape(8.dp)),
             contentAlignment = Alignment.Center,
         ) {
             Image(
                 painter = painterResource(id = iconRes),
                 contentDescription = label,
                 modifier = Modifier.size(48.dp),
-                alpha = if (enabled) 1f else 0.5f
             )
-            if (!enabled && cooldownMillis > 0) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(8.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = formatCooldown(cooldownMillis),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
         }
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = if (enabled) Color.Unspecified else Color.Gray
-        )
+        Text(text = label, style = MaterialTheme.typography.labelSmall)
     }
 }
 

@@ -320,7 +320,7 @@ private fun ActionIcon(label: String, iconRes: Int, onClick: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
-                .size(56.dp)
+                .size(72.dp)
                 .clickable(onClick = onClick)
                 .background(Color.White, RoundedCornerShape(8.dp)),
             contentAlignment = Alignment.Center,
@@ -328,7 +328,7 @@ private fun ActionIcon(label: String, iconRes: Int, onClick: () -> Unit) {
             Image(
                 painter = painterResource(id = iconRes),
                 contentDescription = label,
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier.size(50.dp),
             )
         }
         Text(text = label, style = MaterialTheme.typography.labelSmall)

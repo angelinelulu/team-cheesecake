@@ -23,7 +23,7 @@ fun DoomscrollAlertScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFD32F2F)) // Warning Red Background
+            .background(Color(0xFF394931))
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -32,16 +32,16 @@ fun DoomscrollAlertScreen(
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "🚨",
-                fontSize = 72.sp
+                text = "🐾",
+                fontSize = 64.sp
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "STOP DOOMSCROLLING!",
+                text = "Your pet needs you!",
                 style = MaterialTheme.typography.headlineMedium,
-                color = Color.White,
+                color = Color(0xFFFBF4E3),
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
@@ -51,7 +51,7 @@ fun DoomscrollAlertScreen(
             Text(
                 text = "Your pet is losing health because of app usage! Take a break and put your phone down.",
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.White.copy(alpha = 0.9f),
+                color = Color(0xFFCCD5B5),
                 textAlign = TextAlign.Center
             )
 
@@ -60,8 +60,8 @@ fun DoomscrollAlertScreen(
             Button(
                 onClick = onDismiss,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
-                    contentColor = Color(0xFFD32F2F)
+                    containerColor = Color(0xFFFBF4E3),
+                    contentColor = Color(0xFF394931)
                 ),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier

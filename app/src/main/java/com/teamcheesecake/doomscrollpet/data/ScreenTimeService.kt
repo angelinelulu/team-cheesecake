@@ -27,6 +27,24 @@ class ScreenTimeService : Service() {
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private lateinit var screenTimeRepository: ScreenTimeRepository
 
+    // Map display names to system package names
+    private val appPackageMapping = mapOf(
+        "YouTube" to "com.google.android.youtube",
+        "Instagram" to "com.instagram.android",
+        "TikTok" to "com.zhiliaoapp.musically",
+        "Twitter" to "com.twitter.android",
+        "X" to "com.twitter.android",
+        "Facebook" to "com.facebook.katana",
+        "Reddit" to "com.reddit.frontpage",
+        "Snapchat" to "com.snapchat.android"
+    )
+
+    private fun Set<String>.toPackageNames(): Set<String> {
+        return this.map { appName ->
+            appPackageMapping[appName] ?: appName
+        }.toSet()
+    }
+
     override fun onCreate() {
         super.onCreate()
         screenTimeRepository = ScreenTimeRepository(applicationContext)
@@ -42,8 +60,11 @@ class ScreenTimeService : Service() {
             while (isActive) {
                 try {
                     val snapshot = db.collection("users").document(uid).get().await()
-                    val avoidApps = (snapshot.get("avoidApps") as? List<*>)
+                    val rawAvoidApps = (snapshot.get("avoidApps") as? List<*>)
                         ?.filterIsInstance<String>()?.toSet() ?: emptySet()
+
+                    // Convert display names ("YouTube") to package names ("com.google.android.youtube")
+                    val avoidApps = rawAvoidApps.toPackageNames()
 
                     if (avoidApps.isNotEmpty()) {
                         val usageMinutes = screenTimeRepository.getTodayUsageMinutes(avoidApps).values.sum()
@@ -53,7 +74,7 @@ class ScreenTimeService : Service() {
                         val lastAlertDate = prefs.getString("last_alert_date", "")
                         var lastAlertedMinutes = prefs.getLong("last_alerted_minutes", 0L)
 
-                        // Reset minute count if it's a new day
+                        // Reset counter on a new day
                         if (lastAlertDate != todayStr) {
                             lastAlertedMinutes = 0L
                             prefs.edit()
@@ -62,7 +83,7 @@ class ScreenTimeService : Service() {
                                 .apply()
                         }
 
-                        // Fire an alert for EVERY NEW MINUTE spent on an avoided app
+                        // Fire an alert every time a new minute on avoided apps is hit
                         if (usageMinutes >= 1L && usageMinutes > lastAlertedMinutes) {
                             prefs.edit().putLong("last_alerted_minutes", usageMinutes).apply()
                             triggerAlertNotification(usageMinutes)
@@ -72,7 +93,7 @@ class ScreenTimeService : Service() {
                     e.printStackTrace()
                 }
 
-                delay(10_000L) // Checks usage every 10 seconds
+                delay(10_000L) // Checks screen time every 10 seconds
             }
         }
         return START_STICKY
@@ -104,7 +125,7 @@ class ScreenTimeService : Service() {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(2002, builder.build())
 
-        // Direct launch over other apps when overlay permission is granted
+        // Directly launch full screen alert over YouTube when overlay permission is granted
         if (Settings.canDrawOverlays(this)) {
             startActivity(intent)
         }

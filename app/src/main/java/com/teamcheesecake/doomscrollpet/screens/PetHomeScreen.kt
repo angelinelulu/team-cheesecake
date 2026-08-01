@@ -73,7 +73,7 @@ fun PetActionBottomBar(
 }
 
 private fun getCooldownMillis(lastTimestamp: Long, currentTime: Long): Long {
-    val cooldownPeriod = 60 * 60 * 1000L
+    val cooldownPeriod = 24 * 60 * 60 * 1000L
     val elapsed = currentTime - lastTimestamp
     return if (elapsed < cooldownPeriod) cooldownPeriod - elapsed else 0L
 }

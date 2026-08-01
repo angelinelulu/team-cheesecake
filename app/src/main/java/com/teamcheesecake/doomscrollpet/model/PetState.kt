@@ -103,10 +103,10 @@ data class PetUiState(
         get() = doomscrollMinutesToday >= doomscrollLimitMinutes
 
     val canFeedTreat: Boolean
-        get() = System.currentTimeMillis() - lastFedTimestamp >= 60 * 60 * 1000
+        get() = System.currentTimeMillis() - lastFedTimestamp >= 60 * 60 * 1000 * 24
 
     val canGiveWater: Boolean
-        get() = System.currentTimeMillis() - lastWaterTimestamp >= 60 * 60 * 1000
+        get() = System.currentTimeMillis() - lastWaterTimestamp >= 60 * 60 * 1000 * 24
 
     val petEmoji: String
         get() = when (mood) {

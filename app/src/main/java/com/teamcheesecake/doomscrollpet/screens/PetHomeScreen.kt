@@ -33,6 +33,7 @@ import com.teamcheesecake.doomscrollpet.model.PetMood
 import com.teamcheesecake.doomscrollpet.model.PetUiState
 import com.teamcheesecake.doomscrollpet.ui.theme.YellowBack
 import java.util.Locale
+import androidx.compose.foundation.clickable
 
 @Composable
 fun PetHomeScreen(
@@ -40,6 +41,7 @@ fun PetHomeScreen(
     myCode: String,
     onSendFriendRequest: (String) -> Unit,
     onSignOut: () -> Unit,
+    onNavigateToPark: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var profileMenuExpanded by remember { mutableStateOf(false) }
@@ -114,7 +116,9 @@ fun PetHomeScreen(
         ) {
             // Pet Park icon row (swap in your own icon assets here)
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToPark() },
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {

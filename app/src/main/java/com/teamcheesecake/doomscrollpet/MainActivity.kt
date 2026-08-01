@@ -42,6 +42,7 @@ import com.teamcheesecake.doomscrollpet.model.MORE_APP_OPTIONS
 import com.teamcheesecake.doomscrollpet.model.PetViewModel
 import com.teamcheesecake.doomscrollpet.screens.FriendsScreen
 import com.teamcheesecake.doomscrollpet.screens.PetHomeScreen
+import com.teamcheesecake.doomscrollpet.screens.PetParkScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.AnimalScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.AppSelectionScreen
 import com.teamcheesecake.doomscrollpet.screens.onboarding.ConnectScreen
@@ -80,11 +81,6 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
     val navController = rememberNavController()
     val state = petViewModel.uiState
 
-    // Always start at SIGN_IN if there's no current user. If there IS a current
-    // user (e.g. app was force-closed and reopened), we still route through
-    // SIGN_IN's success handler logic below rather than trusting local state here,
-    // since local PetViewModel state doesn't yet reflect what's actually saved in
-    // Firestore on a cold launch.
     val startDestination = remember {
         if (FirebaseAuth.getInstance().currentUser == null) Routes.SIGN_IN else Routes.SIGN_IN
     }
@@ -170,6 +166,7 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
 @Composable
 private fun MainAppScreen(petViewModel: PetViewModel, onSignOut: () -> Unit) {
     var selectedTab by remember { mutableIntStateOf(0) }
+    var showPetPark by remember { mutableStateOf(false) }
     val state = petViewModel.uiState
     val context = LocalContext.current
 
@@ -210,40 +207,51 @@ private fun MainAppScreen(petViewModel: PetViewModel, onSignOut: () -> Unit) {
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    icon = { Icon(Icons.Default.Face, contentDescription = "Pet") },
-                    label = { Text("Pet") },
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    icon = { Icon(Icons.Default.Group, contentDescription = "Friends") },
-                    label = { Text("Friends") },
-                )
+            if (!showPetPark) {
+                NavigationBar {
+                    NavigationBarItem(
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 },
+                        icon = { Icon(Icons.Default.Face, contentDescription = "Pet") },
+                        label = { Text("Pet") },
+                    )
+                    NavigationBarItem(
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1 },
+                        icon = { Icon(Icons.Default.Group, contentDescription = "Friends") },
+                        label = { Text("Friends") },
+                    )
+                }
             }
         },
     ) { innerPadding ->
-        when (selectedTab) {
-            0 -> PetHomeScreen(
-                state = state,
-                myCode = state.myCode,
-                onSendFriendRequest = petViewModel::sendFriendRequest,
-                onSignOut = onSignOut,
+        if (showPetPark) {
+            PetParkScreen(
+                friends = emptyList(),
+                onBack = { showPetPark = false },
                 modifier = Modifier.padding(innerPadding),
             )
-            1 -> FriendsScreen(
-                myCode = state.myCode,
-                friends = state.friends,
-                incomingRequests = state.incomingRequests,
-                outgoingRequests = state.outgoingRequests,
-                onSendFriendRequest = petViewModel::sendFriendRequest,
-                onAcceptRequest = petViewModel::acceptFriendRequest,
-                onDeclineRequest = petViewModel::declineFriendRequest,
-                modifier = Modifier.padding(innerPadding),
-            )
+        } else {
+            when (selectedTab) {
+                0 -> PetHomeScreen(
+                    state = state,
+                    myCode = state.myCode,
+                    onSendFriendRequest = petViewModel::sendFriendRequest,
+                    onSignOut = onSignOut,
+                    onNavigateToPark = { showPetPark = true },
+                    modifier = Modifier.padding(innerPadding),
+                )
+                1 -> FriendsScreen(
+                    myCode = state.myCode,
+                    friends = state.friends,
+                    incomingRequests = state.incomingRequests,
+                    outgoingRequests = state.outgoingRequests,
+                    onSendFriendRequest = petViewModel::sendFriendRequest,
+                    onAcceptRequest = petViewModel::acceptFriendRequest,
+                    onDeclineRequest = petViewModel::declineFriendRequest,
+                    modifier = Modifier.padding(innerPadding),
+                )
+            }
         }
     }
 }

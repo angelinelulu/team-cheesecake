@@ -54,6 +54,7 @@ import android.widget.Toast
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import com.teamcheesecake.doomscrollpet.screens.ParkScreen
+import com.teamcheesecake.doomscrollpet.screens.NearbyParksScreen
 
 private object Routes {
     const val SIGN_IN = "onboarding/signin"
@@ -65,6 +66,7 @@ private object Routes {
     const val MAIN = "main"
     const val PROFILE = "main/profile"
     const val PARK = "main/park"
+    const val NEARBY_PARKS = "main/nearby_parks"
 }
 
 private const val LOCATION_REFRESH_INTERVAL_MS = 15_000L
@@ -175,6 +177,7 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
                     petViewModel = petViewModel,
                     onNavigateToProfile = { navController.navigate(Routes.PROFILE) },
                     onNavigateToPark = { navController.navigate(Routes.PARK) },
+                    onNavigateToNearbyParks = { navController.navigate(Routes.NEARBY_PARKS) },
                 )
             }
             composable(Routes.PROFILE) {
@@ -193,14 +196,18 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
                     onBack = { navController.popBackStack() },
                 )
             }
+            composable(Routes.NEARBY_PARKS) {
+                NearbyParksScreen(onBack = { navController.popBackStack() })
+            }
         }
     }
 }
 
 @Composable
-private fun MainAppScreen(    petViewModel: PetViewModel,
-                              onNavigateToProfile: () -> Unit,
-                              onNavigateToPark: () -> Unit,) {
+private fun MainAppScreen(        petViewModel: PetViewModel,
+                                  onNavigateToProfile: () -> Unit,
+                                  onNavigateToPark: () -> Unit,
+                                  onNavigateToNearbyParks: () -> Unit,) {
     val state = petViewModel.uiState
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -250,36 +257,7 @@ private fun MainAppScreen(    petViewModel: PetViewModel,
             com.teamcheesecake.doomscrollpet.screens.PetActionBottomBar(
                 onFood = petViewModel::feedPet,
                 onWater = petViewModel::waterPet,
-                onExercise = {
-                    android.util.Log.d("ExerciseButton", "Tapped!")
-                    scope.launch {
-                        val latLng = petViewModel.getCurrentLocation()
-                        if (latLng == null) {
-                            Toast.makeText(
-                                context,
-                                "Couldn't get your location — check location permission",
-                                Toast.LENGTH_SHORT,
-                            ).show()
-                            return@launch
-                        }
-                        val (lat, lng) = latLng
-                        val mapsIntent = Intent(
-                            Intent.ACTION_VIEW,
-                            Uri.parse("geo:$lat,$lng?q=parks+near+me"),
-                        ).apply { setPackage("com.google.android.apps.maps") }
-
-                        if (mapsIntent.resolveActivity(context.packageManager) != null) {
-                            context.startActivity(mapsIntent)
-                        } else {
-                            context.startActivity(
-                                Intent(
-                                    Intent.ACTION_VIEW,
-                                    Uri.parse("https://www.google.com/maps/search/parks/@$lat,$lng,14z"),
-                                ),
-                            )
-                        }
-                    }
-                },
+                onExercise = onNavigateToNearbyParks,
             )
         },
     ) { innerPadding ->

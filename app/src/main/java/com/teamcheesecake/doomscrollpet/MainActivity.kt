@@ -199,7 +199,10 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
                 )
             }
             composable(Routes.NEARBY_PARKS) {
-                NearbyParksScreen(onBack = { navController.popBackStack() })
+                NearbyParksScreen(
+                    state = state,
+                    onBack = { navController.popBackStack() }
+                )
             }
             composable(Routes.SETTINGS_APPS) {
                 AppSelectionScreen(

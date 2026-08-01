@@ -37,6 +37,7 @@ import java.util.Locale
 @Composable
 fun PetHomeScreen(
     state: PetUiState,
+    myCode: String,
     onAddFriend: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -202,6 +203,7 @@ fun PetHomeScreen(
 
     if (showAddFriendDialog) {
         AddFriendDialog(
+            myCode = myCode,
             onDismiss = { showAddFriendDialog = false },
             onSubmit = { code ->
                 onAddFriend(code)
@@ -213,6 +215,7 @@ fun PetHomeScreen(
 
 @Composable
 private fun AddFriendDialog(
+    myCode: String,
     onDismiss: () -> Unit,
     onSubmit: (String) -> Unit,
 ) {
@@ -224,10 +227,19 @@ private fun AddFriendDialog(
         text = {
             Column {
                 Text(
-                    text = "Enter your friend's code to connect your pets.",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = "Your code",
+                    style = MaterialTheme.typography.labelSmall,
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = myCode,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = "Share this with your friend, or enter theirs below.",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+                )
                 OutlinedTextField(
                     value = codeInput,
                     onValueChange = { codeInput = it },

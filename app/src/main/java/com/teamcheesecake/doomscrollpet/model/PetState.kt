@@ -80,6 +80,10 @@ data class PetUiState(
     val moreAppMinutesToday: Int = 0,
     val distanceMetersToday: Double = 0.0,
     val proximityBonus: Int = 0, // accumulates from time spent near friends today
+    val careBonus: Int = 0, // accumulates from feeding/watering today
+    val lastFedTimestamp: Long = 0, // epoch milliseconds
+    val lastWaterTimestamp: Long = 0, // epoch milliseconds
+    val lastStatsUpdateMillis: Long = 0, // epoch milliseconds
     val myCode: String = "",
     val friends: List<Friend> = emptyList(),
     val badges: List<String> = emptyList(),
@@ -97,6 +101,12 @@ data class PetUiState(
 
     val isOverLimit: Boolean
         get() = doomscrollMinutesToday >= doomscrollLimitMinutes
+
+    val canFeedTreat: Boolean
+        get() = System.currentTimeMillis() - lastFedTimestamp >= 60 * 60 * 1000 * 24
+
+    val canGiveWater: Boolean
+        get() = System.currentTimeMillis() - lastWaterTimestamp >= 60 * 60 * 1000 * 24
 
     val petEmoji: String
         get() = when (mood) {

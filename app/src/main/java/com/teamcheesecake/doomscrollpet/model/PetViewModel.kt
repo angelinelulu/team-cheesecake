@@ -8,7 +8,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.ListenerRegistration
 import com.teamcheesecake.doomscrollpet.data.DeviceIdentity
-import com.teamcheesecake.doomscrollpet.data.HealthRepository
 import com.teamcheesecake.doomscrollpet.data.LocationRepository
 import com.teamcheesecake.doomscrollpet.data.ProximityNotifier
 import com.teamcheesecake.doomscrollpet.data.ScreenTimeRepository
@@ -17,13 +16,16 @@ import kotlinx.coroutines.launch
 private const val BASE_HEALTH = 80
 private const val AVOID_MINUTE_PENALTY = 2
 private const val MORE_MINUTE_BONUS = 1
-private const val STEPS_PER_HEALTH_POINT = 500
+private const val METERS_PER_HEALTH_POINT = 100
+
+// Ignore GPS deltas smaller than this between fixes — otherwise standing still slowly racks up
+// "distance" from ordinary GPS jitter.
+private const val MIN_MOVEMENT_METERS = 5.0
 
 class PetViewModel(application: Application) : AndroidViewModel(application) {
 
     private val locationRepository = LocationRepository(application)
     private val screenTimeRepository = ScreenTimeRepository(application)
-    private val healthRepository = HealthRepository(application)
     private val friendListeners = mutableMapOf<String, ListenerRegistration>()
     private var myLat: Double? = null
     private var myLng: Double? = null
@@ -79,35 +81,16 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         recomputeHealth()
     }
 
-    // Health (real, via Health Connect)
-
-    fun isHealthConnectAvailable(): Boolean = healthRepository.isAvailable()
-
-    val healthConnectPermissions: Set<String> get() = healthRepository.permissions
-
-    /** Call after the Health Connect permission grant, and periodically after. */
-    fun refreshHealthConnect() {
-        viewModelScope.launch {
-            if (!healthRepository.isAvailable() || !healthRepository.hasPermissions()) {
-                uiState = uiState.copy(healthAppConnected = false)
-                return@launch
-            }
-            val steps = healthRepository.getTodayStepCount()
-            uiState = uiState.copy(healthAppConnected = true, stepsToday = steps)
-            recomputeHealth()
-        }
-    }
-
     private fun recomputeHealth() {
         val computed = BASE_HEALTH -
             uiState.doomscrollMinutesToday * AVOID_MINUTE_PENALTY +
             uiState.moreAppMinutesToday * MORE_MINUTE_BONUS +
-            (uiState.stepsToday / STEPS_PER_HEALTH_POINT).toInt() +
+            (uiState.distanceMetersToday / METERS_PER_HEALTH_POINT).toInt() +
             uiState.proximityBonus
         uiState = uiState.copy(health = computed.coerceIn(0, 100))
     }
 
-    // Location / friends
+    // Location / friends / distance traveled
 
     fun addFriend(code: String) {
         val normalized = code.trim().uppercase()
@@ -148,10 +131,25 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         uiState = uiState.copy(friends = uiState.friends.filterNot { it.code == code })
     }
 
-    /** Fetches this device's current location and publishes it, then re-checks distance to friends. */
+    /**
+     * Fetches this device's current location, accumulates distance traveled since the last
+     * fix (filtering out small GPS jitter), publishes the new position, and re-checks distance
+     * to friends.
+     */
     fun refreshMyLocation() {
         viewModelScope.launch {
             val latLng = locationRepository.getCurrentLatLng() ?: return@launch
+            val previousLat = myLat
+            val previousLng = myLng
+
+            if (previousLat != null && previousLng != null) {
+                val delta = LocationRepository.distanceMeters(previousLat, previousLng, latLng.first, latLng.second)
+                if (delta >= MIN_MOVEMENT_METERS) {
+                    uiState = uiState.copy(distanceMetersToday = uiState.distanceMetersToday + delta)
+                    recomputeHealth()
+                }
+            }
+
             myLat = latLng.first
             myLng = latLng.second
             locationRepository.publishMyLocation(

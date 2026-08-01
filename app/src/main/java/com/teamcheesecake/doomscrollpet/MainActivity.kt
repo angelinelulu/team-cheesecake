@@ -119,12 +119,8 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
         }
         composable(Routes.CONNECT) {
             ConnectScreen(
-                healthConnected = state.healthAppConnected,
                 screenTimeConnected = state.screenTimeConnected,
-                healthConnectAvailable = petViewModel.isHealthConnectAvailable(),
-                healthPermissions = petViewModel.healthConnectPermissions,
                 onCheckScreenTimeAccess = { petViewModel.refreshScreenTime() },
-                onHealthPermissionsResult = { petViewModel.refreshHealthConnect() },
                 onFinish = {
                     petViewModel.completeOnboarding()
                     navController.navigate(Routes.MAIN) {
@@ -171,7 +167,6 @@ private fun MainAppScreen(petViewModel: PetViewModel) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 petViewModel.refreshScreenTime()
-                petViewModel.refreshHealthConnect()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -179,7 +174,6 @@ private fun MainAppScreen(petViewModel: PetViewModel) {
     }
     LaunchedEffect(Unit) {
         petViewModel.refreshScreenTime()
-        petViewModel.refreshHealthConnect()
     }
 
     Scaffold(

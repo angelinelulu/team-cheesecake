@@ -62,10 +62,5 @@ dependencies {
     implementation("com.google.android.gms:play-services-location:21.3.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
 
-    // Health Connect — pinned to a version I know exists; if Gradle can't resolve it,
-    // check https://developer.android.com/health-and-fitness/guides/health-connect/setup
-    // for the current version and bump this (same issue we hit with the Firebase BOM).
-    implementation("androidx.health.connect:connect-client:1.1.0")
-
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

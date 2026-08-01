@@ -15,6 +15,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.teamcheesecake.doomscrollpet.model.PetMood
 import com.teamcheesecake.doomscrollpet.model.PetUiState
+import java.util.Locale
 
 @Composable
 fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
@@ -50,22 +51,20 @@ fun PetHomeScreen(state: PetUiState, modifier: Modifier = Modifier) {
 
         Text(text = "Doomscroll today: ${state.doomscrollMinutesToday} / ${state.doomscrollLimitMinutes} min")
         Text(text = "Good-app time today: ${state.moreAppMinutesToday} min")
-        Text(text = "Steps today: ${state.stepsToday}")
+        Text(text = "Distance today: ${formatKm(state.distanceMetersToday)} km")
         Text(text = "Streak: ${state.streakDays} days")
 
-        if (!state.screenTimeConnected || !state.healthAppConnected) {
+        if (!state.screenTimeConnected) {
             Text(
-                text = buildString {
-                    append("Not connected: ")
-                    if (!state.screenTimeConnected) append("screen time ")
-                    if (!state.healthAppConnected) append("health")
-                },
+                text = "Not connected: screen time",
                 style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier.padding(top = 8.dp),
             )
         }
     }
 }
+
+private fun formatKm(meters: Double): String = String.format(Locale.US, "%.2f", meters / 1000.0)
 
 private fun moodMessage(state: PetUiState): String = when (state.mood) {
     PetMood.THRIVING -> "Your pet is thriving! Keep it up."

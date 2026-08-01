@@ -23,6 +23,41 @@ class PetViewModel : ViewModel() {
     )
         private set
 
+    // Onboarding
+
+    fun setName(name: String) {
+        uiState = uiState.copy(ownerName = name)
+    }
+
+    fun selectAnimal(animal: Animal) {
+        uiState = uiState.copy(animal = animal)
+    }
+
+    fun toggleAvoidApp(app: String) {
+        uiState = uiState.copy(avoidApps = uiState.avoidApps.toggle(app))
+    }
+
+    fun toggleMoreApp(app: String) {
+        uiState = uiState.copy(moreApps = uiState.moreApps.toggle(app))
+    }
+
+    fun setHealthAppConnected(connected: Boolean) {
+        uiState = uiState.copy(healthAppConnected = connected)
+    }
+
+    fun setScreenTimeConnected(connected: Boolean) {
+        uiState = uiState.copy(screenTimeConnected = connected)
+    }
+
+    fun completeOnboarding() {
+        uiState = uiState.copy(onboardingComplete = true)
+    }
+
+    private fun Set<String>.toggle(item: String): Set<String> =
+        if (contains(item)) this - item else this + item
+
+    // Gameplay
+
     fun logDoomscrollMinutes(minutes: Int) {
         val newMinutes = uiState.doomscrollMinutesToday + minutes
         val penalty = minutes * 2

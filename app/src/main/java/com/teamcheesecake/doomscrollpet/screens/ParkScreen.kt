@@ -8,6 +8,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -15,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -28,10 +31,10 @@ import com.teamcheesecake.doomscrollpet.R
 import com.teamcheesecake.doomscrollpet.model.Animal
 import com.teamcheesecake.doomscrollpet.model.FriendPetStatus
 import androidx.compose.foundation.clickable
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.offset
 
 @Composable
 fun ParkScreen(
@@ -106,6 +109,7 @@ fun ParkScreen(
                 }
             }
         }
+
         selectedFriend?.let { friend ->
             Box(
                 modifier = Modifier
@@ -161,13 +165,14 @@ fun ParkScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(12.dp))
-                        LinearProgressIndicator(
-                            progress = { friend.health / 100f },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(10.dp)
-                                .clip(RoundedCornerShape(50)),
+                        Spacer(modifier = Modifier.height(4.dp))
+                        HealthHappinessBar(health = friend.health, happiness = friend.happiness)
+
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "Productivity Percentage: ${productivityPercent(friend.doomscrollMinutesToday)}%",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
                         )
 
                         Spacer(modifier = Modifier.height(20.dp))
@@ -247,3 +252,59 @@ private fun AnimalVisual(animal: Animal, health: Int) {
         Text(text = animal.emoji, style = MaterialTheme.typography.displayLarge)
     }
 }
+
+@Composable
+private fun HealthHappinessBar(health: Int, happiness: Int) {
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 20.dp), // extra vertical room for the markers above/below
+    ) {
+        val barWidth = maxWidth
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(14.dp)
+                .align(Alignment.Center)
+                .clip(RoundedCornerShape(50))
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(
+                            Color(0xFFD32F2F),
+                            Color(0xFFFF9800),
+                            Color(0xFFFFEB3B),
+                            Color(0xFF8BC34A),
+                            Color(0xFF4CAF50),
+                        ),
+                    ),
+                ),
+        )
+
+        // Health marker, above the bar.
+        Icon(
+            Icons.Filled.ArrowDropDown,
+            contentDescription = "Health",
+            tint = Color.Black,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .offset(x = barWidth * (health / 100f) - 12.dp),
+        )
+
+        // Happiness marker, below the bar.
+        Icon(
+            Icons.Filled.ArrowDropUp,
+            contentDescription = "Happiness",
+            tint = Color(0xFF3949AB),
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .offset(x = barWidth * (happiness / 100f) - 12.dp),
+        )
+    }
+}
+
+private fun productivityPercent(doomscrollMinutes: Int): Int =
+    (100 - (doomscrollMinutes * 100 / DOOMSCROLL_LIMIT_MINUTES)).coerceIn(0, 100)
+
+// Matches the app's default doomscroll limit (see PetUiState.doomscrollLimitMinutes).
+private const val DOOMSCROLL_LIMIT_MINUTES = 60

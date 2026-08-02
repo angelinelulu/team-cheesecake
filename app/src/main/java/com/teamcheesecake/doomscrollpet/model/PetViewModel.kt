@@ -26,6 +26,8 @@ private const val MORE_MINUTE_BONUS = 1
 private const val METERS_PER_HEALTH_POINT = 100
 private const val FOOD_HEALTH_BONUS = 50
 private const val WATER_HEALTH_BONUS = 25
+private const val HAPPINESS_TICK_INTERVAL_MS = 30_000L
+private const val HAPPINESS_RECOVERY_PER_TICK = 1
 
 // Ignore GPS deltas smaller than this between fixes — otherwise standing still slowly racks up
 // "distance" from ordinary GPS jitter.
@@ -125,12 +127,16 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     lastWaterTimestamp = snapshot.getLong("lastWaterTimestamp") ?: 0L,
                     lastStatsUpdateMillis = snapshot.getTimestamp("lastStatsUpdate")?.toDate()?.time ?: 0L,
                     onboardingComplete = snapshot.getBoolean("onboardingComplete") ?: false,
+                    happiness = (snapshot.getLong("happiness") ?: 100L).toInt(),
                 )
 
                 isAccountLoaded = true
                 recomputeHealth()
                 refreshScreenTime()
                 startListeningToFriendLinks()
+                recomputeHealth()
+                startListeningToFriendLinks()
+                startHappinessTicker()
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load or create account code", e)
             }
@@ -215,16 +221,39 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun recomputeHealth() {
-        checkDailyReset()
+        val previousHealth = uiState.health
         val computed = BASE_HEALTH -
                 uiState.doomscrollMinutesToday * AVOID_MINUTE_PENALTY +
                 uiState.moreAppMinutesToday * MORE_MINUTE_BONUS +
                 (uiState.distanceMetersToday / METERS_PER_HEALTH_POINT).toInt() +
-                uiState.proximityBonus +
-                uiState.careBonus
+                uiState.proximityBonus
+        val newHealth = computed.coerceIn(0, 100)
 
-        uiState = uiState.copy(health = computed.coerceIn(0, 100))
+        // Happiness depletes by the same amount health drops. It does NOT rise here —
+        // recovery when health is full happens on its own timer, see startHappinessTicker().
+        val newHappiness = if (newHealth < previousHealth) {
+            (uiState.happiness - (previousHealth - newHealth)).coerceIn(0, 100)
+        } else {
+            uiState.happiness
+        }
+
+        uiState = uiState.copy(health = newHealth, happiness = newHappiness)
         syncStatsToFirestore()
+    }
+
+    /** While health is full, happiness slowly climbs back to 100 over time. */
+    private fun startHappinessTicker() {
+        viewModelScope.launch {
+            while (true) {
+                delay(HAPPINESS_TICK_INTERVAL_MS)
+                if (uiState.health >= 100 && uiState.happiness < 100) {
+                    uiState = uiState.copy(
+                        happiness = (uiState.happiness + HAPPINESS_RECOVERY_PER_TICK).coerceAtMost(100),
+                    )
+                    syncStatsToFirestore()
+                }
+            }
+        }
     }
 
     /**
@@ -247,6 +276,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
             "distanceMetersToday" to uiState.distanceMetersToday,
             "streakDays" to uiState.streakDays,
             "health" to uiState.health,
+            "happiness" to uiState.happiness,
             "proximityBonus" to uiState.proximityBonus,
             "careBonus" to uiState.careBonus,
             "lastFedTimestamp" to uiState.lastFedTimestamp,
@@ -355,10 +385,17 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                         ?.let { runCatching { Animal.valueOf(it) }.getOrNull() }
                         ?: Animal.CAT
                     val health = (doc.getLong("health") ?: 80L).toInt()
-                    FriendPetStatus(code = code, ownerName = ownerName, animal = animal, health = health)
+                    val happiness = (doc.getLong("happiness") ?: 100L).toInt()
+                    val doomscrollMinutes = (doc.getLong("doomscrollMinutesToday") ?: 0L).toInt()
+                    FriendPetStatus(
+                        code = code,
+                        ownerName = ownerName,
+                        animal = animal,
+                        health = health,
+                        happiness = happiness,
+                        doomscrollMinutesToday = doomscrollMinutes,
+                    )
                 }
-                uiState = uiState.copy(friendPetStatuses = statuses)
-            }
     }
 
     /**

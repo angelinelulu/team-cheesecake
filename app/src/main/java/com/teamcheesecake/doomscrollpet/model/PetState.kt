@@ -31,6 +31,8 @@ data class FriendPetStatus(
     val ownerName: String,
     val animal: Animal,
     val health: Int,
+    val happiness: Int,
+    val doomscrollMinutesToday: Int,
 ) {
     val mood: PetMood
         get() = when {
@@ -74,6 +76,7 @@ data class PetUiState(
     // Pet / gameplay — doomscrollMinutesToday and moreAppMinutesToday come from
     // UsageStatsManager, distanceMetersToday accumulated from GPS location updates.
     val health: Int = 80, // 0-100
+    val happiness: Int = 100,
     val streakDays: Int = 0,
     val doomscrollMinutesToday: Int = 0,
     val doomscrollLimitMinutes: Int = 60,

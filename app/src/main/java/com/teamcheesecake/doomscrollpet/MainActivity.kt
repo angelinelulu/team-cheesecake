@@ -328,6 +328,7 @@ private fun MainAppScreen(
                 onSignOut = onSignOut,
                 onNavigateToProfile = onNavigateToProfile,
                 onNavigateToPark = onNavigateToPark,
+                onMarkRewardSeen = petViewModel::markRewardAsSeen,
                 modifier = Modifier.padding(innerPadding),
             )
             1 -> FriendsScreen(

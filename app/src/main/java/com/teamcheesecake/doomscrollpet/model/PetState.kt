@@ -58,7 +58,7 @@ val MORE_APP_OPTIONS = listOf(
     AppOption("Duolingo", "com.duolingo"),
     AppOption("Books", "com.google.android.apps.books"),
     AppOption("Fitness", "com.google.android.apps.fitness"),
-    AppOption("Calm", "com.calm.android"),
+    AppOption("Google", "com.google.android.googlequicksearchbox"),
 )
 
 data class PetUiState(
@@ -79,11 +79,12 @@ data class PetUiState(
     val moreAppMinutesToday: Int = 0,
     val distanceMetersToday: Double = 0.0,
     val proximityBonus: Int = 0, // accumulates from time spent near friends today
-    val careBonus: Int = 0, // accumulates from feeding/watering today
+    val careBonus: Int = 0,
+    val careReactionTrigger: Long = 0, // accumulates from feeding/watering today
     val lastFedTimestamp: Long = 0, // epoch milliseconds
     val lastWaterTimestamp: Long = 0, // epoch milliseconds
     val lastStatsUpdateMillis: Long = 0, // epoch milliseconds
-    val careReactionTrigger: Long = 0, // bumped on feedPet/waterPet to replay the reaction animation; not synced
+    val lastSeenRewardMinutes: Int = 0, // last productivity minutes the user was "rewarded" for in-app
     val myCode: String = "",
     val friends: List<Friend> = emptyList(),
     val badges: List<String> = emptyList(),
@@ -107,4 +108,11 @@ data class PetUiState(
 
     val canGiveWater: Boolean
         get() = System.currentTimeMillis() - lastWaterTimestamp >= 60 * 60 * 1000 * 24
+
+    val petEmoji: String
+        get() = when (mood) {
+            PetMood.THRIVING, PetMood.OKAY -> animal.emoji
+            PetMood.SICK -> "${animal.emoji}🤒"
+            PetMood.CRITICAL -> "${animal.emoji}💀"
+        }
 }

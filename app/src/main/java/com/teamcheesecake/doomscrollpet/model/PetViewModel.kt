@@ -74,7 +74,14 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         "X" to "com.twitter.android",
         "Facebook" to "com.facebook.katana",
         "Reddit" to "com.reddit.frontpage",
-        "Snapchat" to "com.snapchat.android"
+        "Snapchat" to "com.snapchat.android",
+        // Good app mappings
+        "Notes" to "com.google.android.keep",
+        "Canvas" to "com.instructure.candroid",
+        "Duolingo" to "com.duolingo",
+        "Books" to "com.google.android.apps.books",
+        "Fitness" to "com.google.android.apps.fitness",
+        "Google" to "com.google.android.googlequicksearchbox"
     )
 
     private fun Set<String>.toPackageNames(): Set<String> {
@@ -148,6 +155,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     lastFedTimestamp = snapshot.getLong("lastFedTimestamp") ?: 0L,
                     lastWaterTimestamp = snapshot.getLong("lastWaterTimestamp") ?: 0L,
                     lastStatsUpdateMillis = snapshot.getTimestamp("lastStatsUpdate")?.toDate()?.time ?: 0L,
+                    lastSeenRewardMinutes = (snapshot.getLong("lastSeenRewardMinutes") ?: 0L).toInt(),
                     onboardingComplete = snapshot.getBoolean("onboardingComplete") ?: false,
                 )
 
@@ -187,6 +195,14 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         uiState = uiState.copy(moreApps = uiState.moreApps.toggle(app))
         saveSelectedAppsToFirestore()
         refreshScreenTime()
+    }
+
+    fun markRewardAsSeen(minutes: Int) {
+        uiState = uiState.copy(lastSeenRewardMinutes = minutes)
+        val userId = uid ?: return
+        db.collection("users").document(userId)
+            .set(mapOf("lastSeenRewardMinutes" to minutes), SetOptions.merge())
+            .addOnFailureListener { e -> Log.e(TAG, "Failed to save seen reward minutes", e) }
     }
 
     private fun saveSelectedAppsToFirestore() {

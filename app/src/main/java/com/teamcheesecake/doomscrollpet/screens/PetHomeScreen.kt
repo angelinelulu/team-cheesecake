@@ -98,6 +98,7 @@ fun PetHomeScreen(
     onSendFriendRequest: (String) -> Unit,
     onOpenSettings: () -> Unit = {},
     onSignOut: () -> Unit,
+    onSelectAnimal: (Animal) -> Unit,
     onNavigateToProfile: () -> Unit,
     onNavigateToPark: () -> Unit,
     modifier: Modifier = Modifier,
@@ -380,6 +381,7 @@ fun PetHomeScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
+                        onSelectAnimal(Animal.CAT)
                         showPopup = false
                     }
                 ) {

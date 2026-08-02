@@ -228,6 +228,7 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
                     selected = state.avoidApps,
                     onToggle = petViewModel::toggleAvoidApp,
                     onNext = { navController.popBackStack() },
+                    showMuteToggle = true,
                 )
             }
         }

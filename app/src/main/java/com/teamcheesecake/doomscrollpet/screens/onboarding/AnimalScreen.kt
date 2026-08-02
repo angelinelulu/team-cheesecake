@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -82,7 +83,10 @@ fun AnimalScreen(
 
         Button(
             onClick = onNext,
-            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = ButtonGreen),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = ButtonGreen,
+                contentColor = YellowMain
+            ),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 16.dp),

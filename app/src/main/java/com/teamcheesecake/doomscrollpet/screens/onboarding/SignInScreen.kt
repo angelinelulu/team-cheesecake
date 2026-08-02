@@ -86,7 +86,10 @@ fun SignInScreen(onSignInSuccess: (uid: String) -> Unit)  {
         } else {
             Button(
                 onClick = { launcher.launch(googleSignInClient.signInIntent) },
-                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = ButtonGreen)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = ButtonGreen,
+                    contentColor = YellowMain
+                )
             ) {
                 Text("Sign in with Google")
             }

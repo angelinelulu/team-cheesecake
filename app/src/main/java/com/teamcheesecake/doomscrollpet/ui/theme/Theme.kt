@@ -7,7 +7,7 @@ import androidx.compose.ui.graphics.Color
 
 private val LightColorScheme = lightColorScheme(
     primary = ButtonGreen,
-    onPrimary = PetText,
+    onPrimary = YellowMain,
     background = YellowMain,
     onBackground = PetText,
     surface = YellowMain,

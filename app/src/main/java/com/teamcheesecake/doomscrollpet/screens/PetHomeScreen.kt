@@ -111,12 +111,18 @@ private fun EditPetNameDialog(
             )
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(nameInput) }) {
+            TextButton(
+                onClick = { onConfirm(nameInput) },
+                colors = ButtonDefaults.textButtonColors(contentColor = PetText)
+            ) {
                 Text("Save")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(contentColor = PetText)
+            ) {
                 Text("Cancel")
             }
         }
@@ -467,16 +473,20 @@ fun PetHomeScreen(
                         onSelectAnimal(Animal.CAT)
                         AudioManager.playButtonTap()
                         showPopup = false
-                    }
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = PetText)
                 ) {
                     Text("Select Cat")
                 }
             },
             dismissButton = {
-                TextButton(onClick = {
-                    AudioManager.playButtonTap()
-                    showPopup = false
-                }) {
+                TextButton(
+                    onClick = {
+                        AudioManager.playButtonTap()
+                        showPopup = false
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = PetText)
+                ) {
                     Text("Cancel")
                 }
             }
@@ -509,7 +519,10 @@ private fun ProductivityRewardDialog(
             Button(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = ButtonGreen)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = ButtonGreen,
+                    contentColor = YellowMain
+                )
             ) {
                 Text("Keep it up!")
             }
@@ -556,15 +569,19 @@ private fun AddFriendDialog(
                     onSubmit(codeInput.trim())
                 },
                 enabled = codeInput.isNotBlank(),
+                colors = ButtonDefaults.textButtonColors(contentColor = PetText)
             ) {
                 Text("Send Request")
             }
         },
         dismissButton = {
-            TextButton(onClick = {
-                AudioManager.playButtonTap()
-                onDismiss()
-            }) { Text("Cancel") }
+            TextButton(
+                onClick = {
+                    AudioManager.playButtonTap()
+                    onDismiss()
+                },
+                colors = ButtonDefaults.textButtonColors(contentColor = PetText)
+            ) { Text("Cancel") }
         },
     )
 }

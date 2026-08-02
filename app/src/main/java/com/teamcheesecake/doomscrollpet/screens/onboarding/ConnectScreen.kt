@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -71,7 +72,10 @@ fun ConnectScreen(
 
         Button(
             onClick = onFinish,
-            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = ButtonGreen),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = ButtonGreen,
+                contentColor = YellowMain
+            ),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 24.dp),
@@ -103,7 +107,10 @@ private fun ConnectRow(
             }
             Button(
                 onClick = onClick,
-                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = ButtonGreen)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = ButtonGreen,
+                    contentColor = YellowMain
+                )
             ) {
                 Text(if (connected) "Connected ✓" else buttonLabel)
             }

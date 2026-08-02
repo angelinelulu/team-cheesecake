@@ -10,6 +10,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import android.provider.Settings
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -61,10 +62,14 @@ class ScreenTimeService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         serviceScope.launch {
-            val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@launch
-            val db = FirebaseFirestore.getInstance()
-
             while (isActive) {
+                val uid = FirebaseAuth.getInstance().currentUser?.uid
+                if (uid == null) {
+                    delay(5_000L) // Wait for login
+                    continue
+                }
+
+                val db = FirebaseFirestore.getInstance()
                 try {
                     val snapshot = db.collection("users").document(uid).get().await()
                     val rawAvoidApps = (snapshot.get("avoidApps") as? List<*>)
@@ -103,6 +108,7 @@ class ScreenTimeService : Service() {
                     // Handle More Apps (Mirroring Reward System)
                     if (moreApps.isNotEmpty()) {
                         val usageMinutes = screenTimeRepository.getTodayUsageMinutes(moreApps).values.sum()
+                        Log.d("ScreenTimeService", "Productive usage: $usageMinutes min (MoreApps: $moreApps)")
                         var lastRewardedMinutes = prefs.getLong("last_rewarded_minutes", 0L)
                         val lastRewardDate = prefs.getString("last_reward_date", "")
 
@@ -176,7 +182,7 @@ class ScreenTimeService : Service() {
         )
 
         val builder = NotificationCompat.Builder(this, CHANNEL_REWARD_ID)
-            .setSmallIcon(android.R.drawable.btn_star_big_on)
+            .setSmallIcon(android.R.drawable.star_on)
             .setContentTitle("Productivity Reward!")
             .setContentText("You've spent $minutes productive minute(s) today. Good job!")
             .setPriority(NotificationCompat.PRIORITY_HIGH)

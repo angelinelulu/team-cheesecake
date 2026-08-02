@@ -257,6 +257,8 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
             val avoidMinutes = screenTimeRepository.getTodayUsageMinutes(avoidPackages).values.sum().toInt()
             val moreMinutes = screenTimeRepository.getTodayUsageMinutes(morePackages).values.sum().toInt()
 
+            Log.d(TAG, "Screen time refreshed: avoid=$avoidMinutes, more=$moreMinutes")
+
             withContext(Dispatchers.Main) {
                 uiState = uiState.copy(
                     doomscrollMinutesToday = avoidMinutes,

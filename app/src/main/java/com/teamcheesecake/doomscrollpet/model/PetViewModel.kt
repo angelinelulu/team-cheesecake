@@ -15,6 +15,7 @@ import com.teamcheesecake.doomscrollpet.data.FriendRepository
 import com.teamcheesecake.doomscrollpet.data.LocationRepository
 import com.teamcheesecake.doomscrollpet.data.ScreenTimeRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.Calendar
@@ -28,6 +29,8 @@ private const val MORE_MINUTE_BONUS = 1
 private const val METERS_PER_HEALTH_POINT = 100
 private const val FOOD_HEALTH_BONUS = 50
 private const val WATER_HEALTH_BONUS = 25
+private const val HAPPINESS_TICK_INTERVAL_MS = 30_000L
+private const val HAPPINESS_RECOVERY_PER_TICK = 1
 
 // Ignore GPS deltas smaller than this between fixes — otherwise standing still slowly racks up
 // "distance" from ordinary GPS jitter.
@@ -157,12 +160,14 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     lastStatsUpdateMillis = snapshot.getTimestamp("lastStatsUpdate")?.toDate()?.time ?: 0L,
                     lastSeenRewardMinutes = (snapshot.getLong("lastSeenRewardMinutes") ?: 0L).toInt(),
                     onboardingComplete = snapshot.getBoolean("onboardingComplete") ?: false,
+                    happiness = (snapshot.getLong("happiness") ?: 100L).toInt(),
                 )
 
                 isAccountLoaded = true
                 recomputeHealth()
                 refreshScreenTime()
                 startListeningToFriendLinks()
+                startHappinessTicker()
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load or create account code", e)
             }
@@ -255,16 +260,39 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun recomputeHealth() {
-        checkDailyReset()
+        val previousHealth = uiState.health
         val computed = BASE_HEALTH -
                 uiState.doomscrollMinutesToday * AVOID_MINUTE_PENALTY +
                 uiState.moreAppMinutesToday * MORE_MINUTE_BONUS +
                 (uiState.distanceMetersToday / METERS_PER_HEALTH_POINT).toInt() +
-                uiState.proximityBonus +
-                uiState.careBonus
+                uiState.proximityBonus
+        val newHealth = computed.coerceIn(0, 100)
 
-        uiState = uiState.copy(health = computed.coerceIn(0, 100))
+        // Happiness depletes by the same amount health drops. It does NOT rise here —
+        // recovery when health is full happens on its own timer, see startHappinessTicker().
+        val newHappiness = if (newHealth < previousHealth) {
+            (uiState.happiness - (previousHealth - newHealth)).coerceIn(0, 100)
+        } else {
+            uiState.happiness
+        }
+
+        uiState = uiState.copy(health = newHealth, happiness = newHappiness)
         syncStatsToFirestore()
+    }
+
+    /** While health is full, happiness slowly climbs back to 100 over time. */
+    private fun startHappinessTicker() {
+        viewModelScope.launch {
+            while (true) {
+                delay(HAPPINESS_TICK_INTERVAL_MS)
+                if (uiState.health >= 100 && uiState.happiness < 100) {
+                    uiState = uiState.copy(
+                        happiness = (uiState.happiness + HAPPINESS_RECOVERY_PER_TICK).coerceAtMost(100),
+                    )
+                    syncStatsToFirestore()
+                }
+            }
+        }
     }
 
     /**
@@ -287,6 +315,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
             "distanceMetersToday" to uiState.distanceMetersToday,
             "streakDays" to uiState.streakDays,
             "health" to uiState.health,
+            "happiness" to uiState.happiness,
             "proximityBonus" to uiState.proximityBonus,
             "careBonus" to uiState.careBonus,
             "lastFedTimestamp" to uiState.lastFedTimestamp,
@@ -393,11 +422,45 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     val ownerName = doc.getString("ownerName") ?: code
                     val animal = doc.getString("animal")?.let(::parseAnimal) ?: Animal.CAT
                     val health = (doc.getLong("health") ?: 80L).toInt()
-                    FriendPetStatus(code = code, ownerName = ownerName, animal = animal, health = health)
+                    val happiness = (doc.getLong("happiness") ?: 100L).toInt()
+                    val doomscrollMinutes = (doc.getLong("doomscrollMinutesToday") ?: 0L).toInt()
+                    FriendPetStatus(
+                        code = code,
+                        ownerName = ownerName,
+                        animal = animal,
+                        health = health,
+                        happiness = happiness,
+                        doomscrollMinutesToday = doomscrollMinutes,
+                    )
                 }
                 uiState = uiState.copy(friendPetStatuses = statuses)
             }
     }
+
+    /**
+     * Adjusts a friend's health by [delta] (e.g. from "Give Treat!" or "Nudge!"), clamped 0-100.
+     * Looks up their Firestore doc by myCode since that's the only identifier we have for them.
+     */
+    fun adjustFriendHealth(code: String, delta: Int) {
+        viewModelScope.launch {
+            try {
+                val query = db.collection("users")
+                    .whereEqualTo("myCode", code)
+                    .limit(1)
+                    .get()
+                    .await()
+                val doc = query.documents.firstOrNull() ?: return@launch
+                val currentHealth = (doc.getLong("health") ?: 80L).toInt()
+                val newHealth = (currentHealth + delta).coerceIn(0, 100)
+                doc.reference.set(mapOf("health" to newHealth), SetOptions.merge()).await()
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to adjust friend health for code $code", e)
+            }
+        }
+    }
+
+    fun giveTreatToFriend(code: String) = adjustFriendHealth(code, 10)
+    fun nudgeFriend(code: String) = adjustFriendHealth(code, 5)
 
     /** Exposes a one-off location fix for UI actions (e.g. finding nearby parks). Returns null if
      *  location is unavailable or permission hasn't been granted. */

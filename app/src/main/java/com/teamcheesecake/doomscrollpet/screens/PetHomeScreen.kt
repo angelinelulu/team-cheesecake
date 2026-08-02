@@ -29,6 +29,7 @@ import com.teamcheesecake.doomscrollpet.model.PetMood
 import com.teamcheesecake.doomscrollpet.model.PetUiState
 import com.teamcheesecake.doomscrollpet.ui.theme.ButtonGreen
 import com.teamcheesecake.doomscrollpet.ui.theme.PetText
+import com.teamcheesecake.doomscrollpet.AudioManager
 import com.teamcheesecake.doomscrollpet.ui.theme.YellowBack
 import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
 import kotlinx.coroutines.delay
@@ -123,7 +124,10 @@ fun PetHomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = onOpenSettings) {
+                IconButton(onClick = {
+                    AudioManager.playButtonTap()
+                    onOpenSettings()
+                }) {
                     Icon(Icons.Default.Settings, contentDescription = "Settings")
                 }
                 Text(
@@ -133,7 +137,10 @@ fun PetHomeScreen(
                 )
 
                 Box {
-                    IconButton(onClick = { profileMenuExpanded = true }) {
+                    IconButton(onClick = {
+                        AudioManager.playButtonTap()
+                        profileMenuExpanded = true
+                    }) {
                         Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
                     }
                     DropdownMenu(
@@ -144,6 +151,7 @@ fun PetHomeScreen(
                             text = { Text("Add Friend") },
                             leadingIcon = { Icon(Icons.Default.PersonAdd, contentDescription = null) },
                             onClick = {
+                                AudioManager.playButtonTap()
                                 profileMenuExpanded = false
                                 showAddFriendDialog = true
                             },
@@ -152,6 +160,7 @@ fun PetHomeScreen(
                             text = { Text("View Profile") },
                             leadingIcon = { Icon(Icons.Default.AccountCircle, contentDescription = null) },
                             onClick = {
+                                AudioManager.playButtonTap()
                                 profileMenuExpanded = false
                                 onNavigateToProfile()
                             },
@@ -180,21 +189,26 @@ fun PetHomeScreen(
         ) {
             // Pet Park + Swap Pet buttons, side by side and aligned
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = {
+                        AudioManager.playButtonTap()
+                        onNavigateToPark()
+                    }),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable(onClick = onNavigateToPark),
-                ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(text = "\uD83C\uDF33", style = MaterialTheme.typography.headlineSmall)
                     Text(text = "Pet Park", style = MaterialTheme.typography.labelSmall)
                 }
 
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable { showPopup = true },
+                    modifier = Modifier.clickable {
+                        AudioManager.playButtonTap()
+                        showPopup = true
+                    },
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.swap_pets_button),
@@ -382,6 +396,7 @@ fun PetHomeScreen(
                 TextButton(
                     onClick = {
                         onSelectAnimal(Animal.CAT)
+                        AudioManager.playButtonTap()
                         showPopup = false
                     }
                 ) {
@@ -389,7 +404,10 @@ fun PetHomeScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showPopup = false }) {
+                TextButton(onClick = {
+                    AudioManager.playButtonTap()
+                    showPopup = false
+                }) {
                     Text("Cancel")
                 }
             }
@@ -431,14 +449,20 @@ private fun AddFriendDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onSubmit(codeInput.trim()) },
+                onClick = {
+                    AudioManager.playButtonTap()
+                    onSubmit(codeInput.trim())
+                },
                 enabled = codeInput.isNotBlank(),
             ) {
                 Text("Send Request")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = {
+                AudioManager.playButtonTap()
+                onDismiss()
+            }) { Text("Cancel") }
         },
     )
 }
@@ -455,7 +479,10 @@ private fun ActionIcon(
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable(enabled = enabled) { onClick() }
+        modifier = Modifier.clickable(enabled = enabled) {
+            AudioManager.playButtonTap()
+            onClick()
+        }
     ) {
         Box(
             modifier = Modifier

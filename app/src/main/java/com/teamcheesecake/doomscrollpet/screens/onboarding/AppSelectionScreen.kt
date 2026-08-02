@@ -11,12 +11,19 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.teamcheesecake.doomscrollpet.AudioManager
 import com.teamcheesecake.doomscrollpet.model.AppOption
 import com.teamcheesecake.doomscrollpet.ui.theme.ButtonGreen
 import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
@@ -25,6 +32,9 @@ import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
  * Shared by both the "avoid" and "do more of" onboarding steps — same
  * checklist UI, different title/options/selection passed in. `selected`/`onToggle`
  * key off package name, not display name.
+ *
+ * [showMuteToggle] additionally shows a "Mute music" switch above the list —
+ * pass `true` only when this screen is reached from Settings, not onboarding.
  */
 @Composable
 fun AppSelectionScreen(
@@ -35,7 +45,10 @@ fun AppSelectionScreen(
     onToggle: (String) -> Unit,
     onNext: () -> Unit,
     modifier: Modifier = Modifier,
+    showMuteToggle: Boolean = false,
 ) {
+    var musicMuted by remember { mutableStateOf(AudioManager.isMusicMuted()) }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -49,6 +62,27 @@ fun AppSelectionScreen(
             modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
         )
 
+        if (showMuteToggle) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+            ) {
+                Text(text = "Mute music", style = MaterialTheme.typography.bodyLarge)
+                Switch(
+                    checked = musicMuted,
+                    onCheckedChange = { isMuted ->
+                        AudioManager.playButtonTap()
+                        musicMuted = isMuted
+                        AudioManager.setMusicMuted(isMuted)
+                    },
+                )
+            }
+            HorizontalDivider(modifier = Modifier.padding(bottom = 12.dp))
+        }
+
         LazyColumn(modifier = Modifier.weight(1f)) {
             items(options) { app ->
                 Row(
@@ -59,7 +93,10 @@ fun AppSelectionScreen(
                 ) {
                     Checkbox(
                         checked = selected.contains(app.packageName),
-                        onCheckedChange = { onToggle(app.packageName) },
+                        onCheckedChange = {
+                            AudioManager.playButtonTap()
+                            onToggle(app.packageName)
+                        },
                     )
                     Text(text = app.displayName)
                 }
@@ -67,7 +104,10 @@ fun AppSelectionScreen(
         }
 
         Button(
-            onClick = onNext,
+            onClick = {
+                AudioManager.playButtonTap()
+                onNext()
+            },
             colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = ButtonGreen),
             modifier = Modifier
                 .fillMaxWidth()

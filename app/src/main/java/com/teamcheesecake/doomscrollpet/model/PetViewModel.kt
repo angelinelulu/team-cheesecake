@@ -20,6 +20,8 @@ import kotlinx.coroutines.tasks.await
 import java.util.Calendar
 import kotlinx.coroutines.withContext
 
+private fun parseAnimal(name: String): Animal? = runCatching { Animal.valueOf(name) }.getOrNull()
+
 private const val BASE_HEALTH = 80
 private const val AVOID_MINUTE_PENALTY = 2
 private const val MORE_MINUTE_BONUS = 1
@@ -121,9 +123,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 // Load back in whatever was previously saved, so a restart doesn't wipe progress.
-                val savedAnimal = snapshot.getString("animal")?.let { name ->
-                    runCatching { Animal.valueOf(name) }.getOrNull()
-                }
+                val savedAnimal = snapshot.getString("animal")?.let(::parseAnimal)
 
                 val savedAvoidApps = (snapshot.get("avoidApps") as? List<*>)
                     ?.filterIsInstance<String>()?.toSet() ?: uiState.avoidApps
@@ -375,9 +375,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                 val statuses = snapshot.documents.mapNotNull { doc ->
                     val code = doc.getString("myCode") ?: return@mapNotNull null
                     val ownerName = doc.getString("ownerName") ?: code
-                    val animal = doc.getString("animal")
-                        ?.let { runCatching { Animal.valueOf(it) }.getOrNull() }
-                        ?: Animal.CAT
+                    val animal = doc.getString("animal")?.let(::parseAnimal) ?: Animal.CAT
                     val health = (doc.getLong("health") ?: 80L).toInt()
                     FriendPetStatus(code = code, ownerName = ownerName, animal = animal, health = health)
                 }
@@ -425,7 +423,8 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         if (uiState.canFeedTreat) {
             uiState = uiState.copy(
                 lastFedTimestamp = System.currentTimeMillis(),
-                careBonus = uiState.careBonus + FOOD_HEALTH_BONUS
+                careBonus = uiState.careBonus + FOOD_HEALTH_BONUS,
+                careReactionTrigger = uiState.careReactionTrigger + 1,
             )
             recomputeHealth()
         }
@@ -435,7 +434,8 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         if (uiState.canGiveWater) {
             uiState = uiState.copy(
                 lastWaterTimestamp = System.currentTimeMillis(),
-                careBonus = uiState.careBonus + WATER_HEALTH_BONUS
+                careBonus = uiState.careBonus + WATER_HEALTH_BONUS,
+                careReactionTrigger = uiState.careReactionTrigger + 1,
             )
             recomputeHealth()
         }

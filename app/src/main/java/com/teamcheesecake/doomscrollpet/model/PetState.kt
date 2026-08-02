@@ -7,9 +7,9 @@ enum class PetMood {
 enum class Animal(val displayName: String, val emoji: String) {
     CAT("Cat", "🐱"),
     DOG("Dog", "🐶"),
-    PANDA("Panda", "🐼"),
-    FOX("Fox", "🦊"),
-    OWL("Owl", "🦉"),
+    BEAR("Bear", "🐻"),
+    BUNNY("Bunny", "🐰"),
+    COW("Cow", "🐮"),
 }
 
 // Distance under which two friends are considered "nearby" for alerting/health-recovery purposes.
@@ -83,6 +83,7 @@ data class PetUiState(
     val lastFedTimestamp: Long = 0, // epoch milliseconds
     val lastWaterTimestamp: Long = 0, // epoch milliseconds
     val lastStatsUpdateMillis: Long = 0, // epoch milliseconds
+    val careReactionTrigger: Long = 0, // bumped on feedPet/waterPet to replay the reaction animation; not synced
     val myCode: String = "",
     val friends: List<Friend> = emptyList(),
     val badges: List<String> = emptyList(),

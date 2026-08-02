@@ -20,10 +20,7 @@ import kotlinx.coroutines.tasks.await
 import java.util.Calendar
 import kotlinx.coroutines.withContext
 
-// Animal.BUNNY was retired; treat any previously-saved "BUNNY" value as a DOG instead of
-// falling through to the default, so existing bunny owners don't silently lose their pet type.
-private fun parseAnimal(name: String): Animal? =
-    if (name == "BUNNY") Animal.DOG else runCatching { Animal.valueOf(name) }.getOrNull()
+private fun parseAnimal(name: String): Animal? = runCatching { Animal.valueOf(name) }.getOrNull()
 
 private const val BASE_HEALTH = 80
 private const val AVOID_MINUTE_PENALTY = 2
@@ -402,7 +399,8 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         if (uiState.canFeedTreat) {
             uiState = uiState.copy(
                 lastFedTimestamp = System.currentTimeMillis(),
-                careBonus = uiState.careBonus + FOOD_HEALTH_BONUS
+                careBonus = uiState.careBonus + FOOD_HEALTH_BONUS,
+                careReactionTrigger = uiState.careReactionTrigger + 1,
             )
             recomputeHealth()
         }
@@ -412,7 +410,8 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         if (uiState.canGiveWater) {
             uiState = uiState.copy(
                 lastWaterTimestamp = System.currentTimeMillis(),
-                careBonus = uiState.careBonus + WATER_HEALTH_BONUS
+                careBonus = uiState.careBonus + WATER_HEALTH_BONUS,
+                careReactionTrigger = uiState.careReactionTrigger + 1,
             )
             recomputeHealth()
         }

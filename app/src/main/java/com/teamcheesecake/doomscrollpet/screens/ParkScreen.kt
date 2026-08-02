@@ -131,30 +131,30 @@ private fun ScatteredPet(friend: FriendPetStatus) {
     }
 }
 
-@Composable
-internal fun AnimalVisual(animal: Animal, health: Int, size: androidx.compose.ui.unit.Dp = 240.dp) {
+internal fun animalDrawableRes(animal: Animal, health: Int): Int {
     val isDogSick = health < 60
     val isCatSick = health < 20
 
-    val gifRes: Int? = when (animal) {
+    return when (animal) {
         Animal.DOG -> if (isDogSick) R.drawable.dog_character_sick else R.drawable.dog_character
         Animal.CAT -> if (isCatSick) R.drawable.cat_character_sick else R.drawable.cat_character
-        else -> null
+        Animal.BEAR -> R.drawable.bear_character
+        Animal.BUNNY -> R.drawable.bunny_character
+        Animal.COW -> R.drawable.cow_character
     }
+}
 
-    if (gifRes != null) {
-        val context = LocalContext.current
-        val imageLoader = remember {
-            ImageLoader.Builder(context)
-                .components { add(GifDecoder.Factory()) }
-                .build()
-        }
-        Image(
-            painter = rememberAsyncImagePainter(model = gifRes, imageLoader = imageLoader),
-            contentDescription = animal.displayName,
-            modifier = Modifier.size(size),
-        )
-    } else {
-        Text(text = animal.emoji, style = MaterialTheme.typography.displayLarge)
+@Composable
+internal fun AnimalVisual(animal: Animal, health: Int, size: androidx.compose.ui.unit.Dp = 240.dp) {
+    val context = LocalContext.current
+    val imageLoader = remember {
+        ImageLoader.Builder(context)
+            .components { add(GifDecoder.Factory()) }
+            .build()
     }
+    Image(
+        painter = rememberAsyncImagePainter(model = animalDrawableRes(animal, health), imageLoader = imageLoader),
+        contentDescription = animal.displayName,
+        modifier = Modifier.size(size),
+    )
 }

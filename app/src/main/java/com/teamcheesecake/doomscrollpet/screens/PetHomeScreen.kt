@@ -101,14 +101,16 @@ fun PetHomeScreen(
     var showAddFriendDialog by remember { mutableStateOf(false) }
     var showPopup by remember { mutableStateOf(false) }
     var showUnlockPopup by remember { mutableStateOf(false) }
-    var hasShownUnlockPopup by remember { mutableStateOf(false) }
 
-    // Triggers the unlock popup when pet reaches 100% health
+    // Keeps track of previous health value to detect dynamic increase to 100%
+    var previousHealth by remember { mutableIntStateOf(state.health) }
+
     LaunchedEffect(state.health) {
-        if (state.health >= 100 && !hasShownUnlockPopup) {
+        // Only trigger popup when health transitions from under 100 to 100
+        if (previousHealth < 100 && state.health >= 100) {
             showUnlockPopup = true
-            hasShownUnlockPopup = true
         }
+        previousHealth = state.health
     }
 
     Column(modifier = modifier.fillMaxSize()) {

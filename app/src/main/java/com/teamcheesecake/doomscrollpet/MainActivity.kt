@@ -250,9 +250,8 @@ private fun MainAppScreen(
         }
     }
 
-    // Single setup for Overlay Permissions, Screen Time Refresh, and Background Service
+    // Single setup for Screen Time Refresh and Background Service
     LaunchedEffect(Unit) {
-        checkAndRequestOverlayPermission(context)
         petViewModel.refreshScreenTime()
 
         val serviceIntent = Intent(context, ScreenTimeService::class.java)
@@ -317,18 +316,6 @@ private fun MainAppScreen(
                 modifier = Modifier.padding(innerPadding),
             )
         }
-    }
-}
-
-/** Requests 'Display over other apps' permission ONLY if not already granted. */
-private fun checkAndRequestOverlayPermission(context: Context) {
-    if (!Settings.canDrawOverlays(context)) {
-        val intent = Intent(
-            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-            Uri.parse("package:${context.packageName}"),
-        )
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(intent)
     }
 }
 

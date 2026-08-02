@@ -13,9 +13,6 @@ import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.teamcheesecake.doomscrollpet.AppVisibilityTracker
-import com.teamcheesecake.doomscrollpet.FullScreenAlertActivity
-import com.teamcheesecake.doomscrollpet.screens.FullScreenRewardActivity
 import com.teamcheesecake.doomscrollpet.data.ScreenTimeRepository
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
@@ -133,15 +130,13 @@ class ScreenTimeService : Service() {
     }
 
     private fun triggerAlertNotification(minutes: Long) {
-        val intent = Intent(this, FullScreenAlertActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+        val intent = Intent(this, com.teamcheesecake.doomscrollpet.MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
 
-        val fullScreenPendingIntent = PendingIntent.getActivity(
+        val pendingIntent = PendingIntent.getActivity(
             this,
-            minutes.toInt(),
+            2002,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -151,30 +146,22 @@ class ScreenTimeService : Service() {
             .setContentTitle("Doomscroll Alert!")
             .setContentText("You've spent $minutes minute(s) on an avoided app today.")
             .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setFullScreenIntent(fullScreenPendingIntent, true)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setContentIntent(pendingIntent)
             .setAutoCancel(true)
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(2002, builder.build())
-
-        // Directly launch full screen alert over YouTube when overlay permission is granted
-        if (Settings.canDrawOverlays(this)) {
-            startActivity(intent)
-        }
     }
 
     private fun triggerRewardNotification(minutes: Long) {
-        val intent = Intent(this, FullScreenRewardActivity::class.java).apply {
-            putExtra("minutes", minutes)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+        val intent = Intent(this, com.teamcheesecake.doomscrollpet.MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
 
-        val fullScreenPendingIntent = PendingIntent.getActivity(
+        val pendingIntent = PendingIntent.getActivity(
             this,
-            minutes.toInt() + 10000, // Offset to avoid ID collision
+            2003,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -185,15 +172,11 @@ class ScreenTimeService : Service() {
             .setContentText("You've spent $minutes productive minute(s) today. Good job!")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_EVENT)
-            .setFullScreenIntent(fullScreenPendingIntent, true)
+            .setContentIntent(pendingIntent)
             .setAutoCancel(true)
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(2003, builder.build())
-
-        if (Settings.canDrawOverlays(this)) {
-            startActivity(intent)
-        }
     }
 
     private fun createPersistentNotification(): Notification {

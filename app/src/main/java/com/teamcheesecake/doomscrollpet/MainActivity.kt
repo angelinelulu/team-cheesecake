@@ -82,11 +82,29 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AudioManager.init(this)
         ProximityNotifier.ensureChannel(this)
         setContent {
             DoomscrollPetTheme {
                 DoomscrollPetApp(petViewModel)
             }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        AudioManager.play()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        AudioManager.pause()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isFinishing) {
+            AudioManager.release()
         }
     }
 }
@@ -102,6 +120,7 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
 
     val signOut: () -> Unit = {
         val context = navController.context
+        petViewModel.clearState()
         FirebaseManager.signOut(context) {
             navController.navigate(Routes.SIGN_IN) {
                 popUpTo(0) { inclusive = true }
@@ -114,6 +133,7 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
             composable(Routes.SIGN_IN) {
                 SignInScreen(
                     onSignInSuccess = { uid ->
+                        AudioManager.play()
                         FirebaseManager.getOrCreateUserProfile(uid) {
                             FirebaseManager.getOnboardingStatus(uid) { onboardingComplete ->
                                 petViewModel.loadOrCreateAccountCode(uid)
@@ -199,7 +219,10 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
                 )
             }
             composable(Routes.NEARBY_PARKS) {
-                NearbyParksScreen(onBack = { navController.popBackStack() })
+                NearbyParksScreen(
+                    state = state,
+                    onBack = { navController.popBackStack() }
+                )
             }
             composable(Routes.SETTINGS_APPS) {
                 AppSelectionScreen(
@@ -209,6 +232,7 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
                     selected = state.avoidApps,
                     onToggle = petViewModel::toggleAvoidApp,
                     onNext = { navController.popBackStack() },
+                    showMuteToggle = true,
                 )
             }
         }

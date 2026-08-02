@@ -7,10 +7,9 @@ enum class PetMood {
 enum class Animal(val displayName: String, val emoji: String) {
     CAT("Cat", "🐱"),
     DOG("Dog", "🐶"),
-    PANDA("Panda", "🐼"),
-    FOX("Fox", "🦊"),
-    OWL("Owl", "🦉"),
+    BEAR("Bear", "🐻"),
     BUNNY("Bunny", "🐰"),
+    COW("Cow", "🐮"),
 }
 
 // Distance under which two friends are considered "nearby" for alerting/health-recovery purposes.

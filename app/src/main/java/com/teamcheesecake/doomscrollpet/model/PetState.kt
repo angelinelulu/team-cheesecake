@@ -79,7 +79,7 @@ data class PetUiState(
     val moreAppMinutesToday: Int = 0,
     val distanceMetersToday: Double = 0.0,
     val proximityBonus: Int = 0, // accumulates from time spent near friends today
-    val careBonus: Int = 0, // accumulates from feeding/watering today
+    val careReactionTrigger: Long = 0, // accumulates from feeding/watering today
     val lastFedTimestamp: Long = 0, // epoch milliseconds
     val lastWaterTimestamp: Long = 0, // epoch milliseconds
     val lastStatsUpdateMillis: Long = 0, // epoch milliseconds

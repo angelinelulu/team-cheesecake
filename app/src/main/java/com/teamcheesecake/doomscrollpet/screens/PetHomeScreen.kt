@@ -200,52 +200,6 @@ fun PetHomeScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("Doomscroll Timer: ")
-                    }
-                    append("${state.doomscrollMinutesToday} / ${state.doomscrollLimitMinutes} min")
-                }
-            )
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("Productivity Timer: ")
-                    }
-                    append("${state.moreAppMinutesToday} min(s)")
-                }
-            )
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("Distance Covered Today: ")
-                    }
-                    append("${formatKm(state.distanceMetersToday)} km")
-                }
-            )
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("Streak: ")
-                    }
-                    append("${state.streakDays} day(s)")
-                }
-            )
-            Text(
-                text = "Badges",
-                fontWeight = FontWeight.Bold
-            )
-
-            if (!state.screenTimeConnected) {
-                Text(
-                    text = "Not connected: screen time",
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
-
             Spacer(modifier = Modifier.height(16.dp))
 
             // Hearts row

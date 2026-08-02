@@ -82,11 +82,29 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AudioManager.init(this)
         ProximityNotifier.ensureChannel(this)
         setContent {
             DoomscrollPetTheme {
                 DoomscrollPetApp(petViewModel)
             }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        AudioManager.play()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        AudioManager.pause()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isFinishing) {
+            AudioManager.release()
         }
     }
 }
@@ -115,6 +133,7 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
             composable(Routes.SIGN_IN) {
                 SignInScreen(
                     onSignInSuccess = { uid ->
+                        AudioManager.play()
                         FirebaseManager.getOrCreateUserProfile(uid) {
                             FirebaseManager.getOnboardingStatus(uid) { onboardingComplete ->
                                 petViewModel.loadOrCreateAccountCode(uid)
@@ -196,6 +215,8 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
             composable(Routes.PARK) {
                 ParkScreen(
                     friendPetStatuses = state.friendPetStatuses,
+                    onGiveTreat = petViewModel::giveTreatToFriend,
+                    onNudge = petViewModel::nudgeFriend,
                     onBack = { navController.popBackStack() },
                 )
             }
@@ -213,6 +234,7 @@ private fun DoomscrollPetApp(petViewModel: PetViewModel) {
                     selected = state.avoidApps,
                     onToggle = petViewModel::toggleAvoidApp,
                     onNext = { navController.popBackStack() },
+                    showMuteToggle = true,
                 )
             }
         }
@@ -304,11 +326,13 @@ private fun MainAppScreen(
                 state = state,
                 myCode = state.myCode,
                 onSendFriendRequest = petViewModel::sendFriendRequest,
+                onSelectAnimal = petViewModel::selectAnimal,
                 onOpenSettings = onOpenSettings,
                 onSignOut = onSignOut,
                 onNavigateToProfile = onNavigateToProfile,
                 onNavigateToPark = onNavigateToPark,
                 onSetPetName = petViewModel::setPetName,
+                onMarkRewardSeen = petViewModel::markRewardAsSeen,
                 modifier = Modifier.padding(innerPadding),
             )
             1 -> FriendsScreen(

@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.teamcheesecake.doomscrollpet.model.Friend
 import com.teamcheesecake.doomscrollpet.ui.theme.ButtonGreen
+import com.teamcheesecake.doomscrollpet.ui.theme.PetText
 import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
 
 @Composable
@@ -60,7 +61,10 @@ fun FriendsScreen(
                         ) {
                             Text(text = request.name.ifBlank { request.code })
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                OutlinedButton(onClick = { onDeclineRequest(request.code) }) {
+                                OutlinedButton(
+                                    onClick = { onDeclineRequest(request.code) },
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = PetText)
+                                ) {
                                     Text("Decline")
                                 }
                                 Button(

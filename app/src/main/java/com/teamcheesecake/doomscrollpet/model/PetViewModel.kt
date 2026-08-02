@@ -274,7 +274,8 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                 uiState.doomscrollMinutesToday * AVOID_MINUTE_PENALTY +
                 uiState.moreAppMinutesToday * MORE_MINUTE_BONUS +
                 (uiState.distanceMetersToday / METERS_PER_HEALTH_POINT).toInt() +
-                uiState.proximityBonus
+                uiState.proximityBonus +
+                uiState.careBonus
         val newHealth = computed.coerceIn(0, 100)
 
         // Happiness depletes by the same amount health drops. It does NOT rise here —

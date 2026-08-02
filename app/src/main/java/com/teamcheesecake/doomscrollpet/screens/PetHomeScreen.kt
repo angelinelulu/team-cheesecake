@@ -394,18 +394,15 @@ fun PetHomeScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Health color bar
+            // Health color bar - Reverted to solid full-width style
             LinearProgressIndicator(
                 progress = { state.health / 100f },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(10.dp)
+                    .height(12.dp)
                     .clip(RoundedCornerShape(50)),
                 color = healthColor(state.health),
-                trackColor = Color.LightGray,
-                strokeCap = StrokeCap.Butt,
-                gapSize = 0.dp,
-                drawStopIndicator = {}
+                trackColor = Color.LightGray
             )
 
             Spacer(modifier = Modifier.height(16.dp))

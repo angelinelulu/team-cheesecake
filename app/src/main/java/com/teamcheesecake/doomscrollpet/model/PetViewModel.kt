@@ -85,7 +85,31 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
 
     // --- Onboarding & Profile Loading ---
 
+    /**
+     * Resets the UI state and clears user-specific data. Called when a user signs out
+     * or before loading a new account to prevent cross-user state leakage.
+     */
+    fun clearState() {
+        uid = null
+        isAccountLoaded = false
+        friendLinksListener?.remove()
+        friendLinksListener = null
+        friendStatsListener?.remove()
+        friendStatsListener = null
+        myLat = null
+        myLng = null
+
+        uiState = PetUiState(
+            myCode = DeviceIdentity.getOrCreateCode(getApplication()),
+            badges = listOf("First Streak"),
+            friends = emptyList(),
+            incomingRequests = emptyList(),
+            outgoingRequests = emptyList()
+        )
+    }
+
     fun loadOrCreateAccountCode(userId: String) {
+        clearState()
         uid = userId
         viewModelScope.launch {
             try {

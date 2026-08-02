@@ -64,6 +64,7 @@ val MORE_APP_OPTIONS = listOf(
 data class PetUiState(
     // Onboarding
     val ownerName: String = "",
+    val petName: String = "",
     val animal: Animal = Animal.CAT,
     val avoidApps: Set<String> = emptySet(), // package names
     val moreApps: Set<String> = emptySet(), // package names

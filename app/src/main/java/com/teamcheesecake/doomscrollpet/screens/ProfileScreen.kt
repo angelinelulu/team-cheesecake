@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.teamcheesecake.doomscrollpet.model.Friend
 import com.teamcheesecake.doomscrollpet.model.PetUiState
+import com.teamcheesecake.doomscrollpet.ui.theme.ButtonGreen
 import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
 import java.util.Locale
 
@@ -119,6 +120,7 @@ fun ProfileScreen(
                     },
                     enabled = codeInput.isNotBlank(),
                     modifier = Modifier.padding(start = 8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = ButtonGreen)
                 ) {
                     Text("Send")
                 }
@@ -135,7 +137,10 @@ fun ProfileScreen(
                             OutlinedButton(onClick = { onDeclineRequest(request.code) }) {
                                 Text("Decline")
                             }
-                            Button(onClick = { onAcceptRequest(request.code) }) {
+                            Button(
+                                onClick = { onAcceptRequest(request.code) },
+                                colors = ButtonDefaults.buttonColors(containerColor = ButtonGreen)
+                            ) {
                                 Text("Accept")
                             }
                         }
@@ -159,7 +164,10 @@ fun ProfileScreen(
             FriendRow(
                 friend = friend,
                 trailing = {
-                    Button(onClick = { /* nudge not implemented yet */ }) {
+                    Button(
+                        onClick = { /* nudge not implemented yet */ },
+                        colors = ButtonDefaults.buttonColors(containerColor = ButtonGreen)
+                    ) {
                         Text("Nudge!")
                     }
                 },
@@ -168,7 +176,11 @@ fun ProfileScreen(
 
         item {
             Spacer(modifier = Modifier.height(24.dp))
-            OutlinedButton(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) {
+            Button(
+                onClick = onSignOut,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = ButtonGreen)
+            ) {
                 Text("Sign Out")
             }
         }

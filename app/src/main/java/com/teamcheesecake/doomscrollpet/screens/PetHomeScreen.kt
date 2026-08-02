@@ -94,10 +94,19 @@ fun PetHomeScreen(
     onSignOut: () -> Unit,
     onNavigateToProfile: () -> Unit,
     onNavigateToPark: () -> Unit,
+    onMarkRewardSeen: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var profileMenuExpanded by remember { mutableStateOf(false) }
     var showAddFriendDialog by remember { mutableStateOf(false) }
+
+    // Logic to show productivity reward if we have new minutes since last seen
+    if (state.moreAppMinutesToday > state.lastSeenRewardMinutes) {
+        ProductivityRewardDialog(
+            minutes = state.moreAppMinutesToday.toLong(),
+            onDismiss = { onMarkRewardSeen(state.moreAppMinutesToday) }
+        )
+    }
 
     Column(modifier = modifier.fillMaxSize()) {
 
@@ -299,6 +308,39 @@ fun PetHomeScreen(
             },
         )
     }
+}
+
+@Composable
+private fun ProductivityRewardDialog(
+    minutes: Long,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(text = "⭐", style = MaterialTheme.typography.displayMedium)
+                Text(text = "Great job!", style = MaterialTheme.typography.headlineMedium)
+            }
+        },
+        text = {
+            Text(
+                text = "You've spent $minutes productive minute(s) today! Your pet is feeling stronger and happier.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = ButtonGreen)
+            ) {
+                Text("Keep it up!")
+            }
+        }
+    )
 }
 
 @Composable

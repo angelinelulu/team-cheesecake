@@ -131,6 +131,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     lastFedTimestamp = snapshot.getLong("lastFedTimestamp") ?: 0L,
                     lastWaterTimestamp = snapshot.getLong("lastWaterTimestamp") ?: 0L,
                     lastStatsUpdateMillis = snapshot.getTimestamp("lastStatsUpdate")?.toDate()?.time ?: 0L,
+                    lastSeenRewardMinutes = (snapshot.getLong("lastSeenRewardMinutes") ?: 0L).toInt(),
                     onboardingComplete = snapshot.getBoolean("onboardingComplete") ?: false,
                 )
 
@@ -170,6 +171,14 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         uiState = uiState.copy(moreApps = uiState.moreApps.toggle(app))
         saveSelectedAppsToFirestore()
         refreshScreenTime()
+    }
+
+    fun markRewardAsSeen(minutes: Int) {
+        uiState = uiState.copy(lastSeenRewardMinutes = minutes)
+        val userId = uid ?: return
+        db.collection("users").document(userId)
+            .set(mapOf("lastSeenRewardMinutes" to minutes), SetOptions.merge())
+            .addOnFailureListener { e -> Log.e(TAG, "Failed to save seen reward minutes", e) }
     }
 
     private fun saveSelectedAppsToFirestore() {

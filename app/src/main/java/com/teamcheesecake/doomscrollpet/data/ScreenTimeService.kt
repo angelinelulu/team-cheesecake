@@ -13,6 +13,8 @@ import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.teamcheesecake.doomscrollpet.AppVisibilityTracker
+import com.teamcheesecake.doomscrollpet.FullScreenAlertActivity
 import com.teamcheesecake.doomscrollpet.data.ScreenTimeRepository
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
@@ -130,13 +132,15 @@ class ScreenTimeService : Service() {
     }
 
     private fun triggerAlertNotification(minutes: Long) {
-        val intent = Intent(this, com.teamcheesecake.doomscrollpet.MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        val intent = Intent(this, FullScreenAlertActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
 
-        val pendingIntent = PendingIntent.getActivity(
+        val fullScreenPendingIntent = PendingIntent.getActivity(
             this,
-            2002,
+            minutes.toInt(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -146,12 +150,17 @@ class ScreenTimeService : Service() {
             .setContentTitle("Doomscroll Alert!")
             .setContentText("You've spent $minutes minute(s) on an avoided app today.")
             .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setCategory(NotificationCompat.CATEGORY_REMINDER)
-            .setContentIntent(pendingIntent)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setFullScreenIntent(fullScreenPendingIntent, true)
             .setAutoCancel(true)
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(2002, builder.build())
+
+        // Directly launch full screen alert over YouTube when overlay permission is granted
+        if (Settings.canDrawOverlays(this)) {
+            startActivity(intent)
+        }
     }
 
     private fun triggerRewardNotification(minutes: Long) {

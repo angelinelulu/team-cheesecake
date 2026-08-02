@@ -84,6 +84,7 @@ data class PetUiState(
     val lastFedTimestamp: Long = 0, // epoch milliseconds
     val lastWaterTimestamp: Long = 0, // epoch milliseconds
     val lastStatsUpdateMillis: Long = 0, // epoch milliseconds
+    val lastSeenRewardMinutes: Int = 0, // last productivity minutes the user was "rewarded" for in-app
     val myCode: String = "",
     val friends: List<Friend> = emptyList(),
     val badges: List<String> = emptyList(),

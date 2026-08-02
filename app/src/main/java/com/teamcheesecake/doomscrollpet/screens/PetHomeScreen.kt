@@ -1,5 +1,6 @@
 package com.teamcheesecake.doomscrollpet.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,23 +15,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import com.teamcheesecake.doomscrollpet.model.PetMood
-import com.teamcheesecake.doomscrollpet.model.PetUiState
-import com.teamcheesecake.doomscrollpet.ui.theme.YellowBack
-import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
-import com.teamcheesecake.doomscrollpet.ui.theme.ButtonGreen
-import com.teamcheesecake.doomscrollpet.ui.theme.PetText
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
-import java.util.Locale
-import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import com.teamcheesecake.doomscrollpet.R
+import com.teamcheesecake.doomscrollpet.model.PetMood
+import com.teamcheesecake.doomscrollpet.model.PetUiState
+import com.teamcheesecake.doomscrollpet.ui.theme.ButtonGreen
+import com.teamcheesecake.doomscrollpet.ui.theme.PetText
+import com.teamcheesecake.doomscrollpet.ui.theme.YellowBack
+import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
 import kotlinx.coroutines.delay
+import java.util.Locale
 
 @Composable
 fun PetActionBottomBar(
@@ -102,12 +103,14 @@ fun PetHomeScreen(
     var showUnlockPopup by remember { mutableStateOf(false) }
     var hasShownUnlockPopup by remember { mutableStateOf(false) }
 
+    // Triggers the unlock popup when pet reaches 100% health
     LaunchedEffect(state.health) {
         if (state.health >= 100 && !hasShownUnlockPopup) {
             showUnlockPopup = true
             hasShownUnlockPopup = true
         }
     }
+
     Column(modifier = modifier.fillMaxSize()) {
 
         // --- Top Bar ---
@@ -322,6 +325,7 @@ fun PetHomeScreen(
             },
         )
     }
+
     if (showPopup) {
         AlertDialog(
             onDismissRequest = { showPopup = false },
@@ -337,11 +341,12 @@ fun PetHomeScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.cat), // Use your actual drawable name
+                        painter = painterResource(id = R.drawable.cat),
                         contentDescription = "Cat Pet",
                         modifier = Modifier
                             .size(120.dp)
-                            .padding(bottom = 12.dp)
+                            .padding(bottom = 12.dp),
+                        contentScale = ContentScale.Fit
                     )
                     Text(
                         text = "Would you like to swap to the Cat?",
@@ -353,7 +358,6 @@ fun PetHomeScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        // TODO: Add your logic to swap pets here
                         showPopup = false
                     }
                 ) {
@@ -368,6 +372,55 @@ fun PetHomeScreen(
         )
     }
 
+    // --- New Pet Unlocked Popup ---
+    if (showUnlockPopup) {
+        AlertDialog(
+            onDismissRequest = { showUnlockPopup = false },
+            title = {
+                Text(
+                    text = "🎉 New Pet Unlocked!",
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.cat),
+                        contentDescription = "Unlocked Cat Pet",
+                        modifier = Modifier
+                            .size(120.dp)
+                            .padding(vertical = 12.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                    Text(
+                        text = "Congratulations! You reached 100% health and unlocked the Cat!",
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showUnlockPopup = false
+                        showPopup = true // Opens the swap dialog right away
+                    }
+                ) {
+                    Text("Swap Now")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUnlockPopup = false }) {
+                    Text("Awesome!")
+                }
+            }
+        )
+    }
 }
 
 @Composable

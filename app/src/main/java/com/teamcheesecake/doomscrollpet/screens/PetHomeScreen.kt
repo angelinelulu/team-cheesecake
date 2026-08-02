@@ -29,13 +29,6 @@ import com.teamcheesecake.doomscrollpet.model.PetMood
 import com.teamcheesecake.doomscrollpet.model.PetUiState
 import com.teamcheesecake.doomscrollpet.ui.theme.ButtonGreen
 import com.teamcheesecake.doomscrollpet.ui.theme.PetText
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
-import java.util.Locale
-import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
-import com.teamcheesecake.doomscrollpet.R
 import com.teamcheesecake.doomscrollpet.AudioManager
 import com.teamcheesecake.doomscrollpet.ui.theme.YellowBack
 import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
@@ -194,7 +187,6 @@ fun PetHomeScreen(
                 .background(YellowMain),
         ) {
             // Pet Park + Swap Pet buttons, side by side and aligned
-// Pet Park icon row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -205,17 +197,17 @@ fun PetHomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable(onClick = onNavigateToPark),
-                ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(text = "\uD83C\uDF33", style = MaterialTheme.typography.headlineSmall)
                     Text(text = "Pet Park", style = MaterialTheme.typography.labelSmall)
                 }
 
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable { showPopup = true },
+                    modifier = Modifier.clickable {
+                        AudioManager.playButtonTap()
+                        showPopup = true
+                    },
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.swap_pets_button),
@@ -402,6 +394,7 @@ fun PetHomeScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
+                        AudioManager.playButtonTap()
                         showPopup = false
                     }
                 ) {
@@ -409,7 +402,10 @@ fun PetHomeScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showPopup = false }) {
+                TextButton(onClick = {
+                    AudioManager.playButtonTap()
+                    showPopup = false
+                }) {
                     Text("Cancel")
                 }
             }

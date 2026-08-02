@@ -16,7 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.teamcheesecake.doomscrollpet.ui.theme.ButtonGreen
-import com.teamcheesecake.doomscrollpet.ui.theme.PetText
 import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
 
 @Composable

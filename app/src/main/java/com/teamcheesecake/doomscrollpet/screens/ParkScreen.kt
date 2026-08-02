@@ -30,8 +30,6 @@ import coil.decode.GifDecoder
 import com.teamcheesecake.doomscrollpet.R
 import com.teamcheesecake.doomscrollpet.model.Animal
 import com.teamcheesecake.doomscrollpet.model.FriendPetStatus
-import com.teamcheesecake.doomscrollpet.ui.theme.ButtonGreen
-import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -179,22 +177,10 @@ fun ParkScreen(
 
                         Spacer(modifier = Modifier.height(20.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Button(
-                                onClick = { onGiveTreat(friend.code) },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = ButtonGreen,
-                                    contentColor = YellowMain
-                                )
-                            ) {
+                            Button(onClick = { onGiveTreat(friend.code) }) {
                                 Text("Give Treat!")
                             }
-                            Button(
-                                onClick = { onNudge(friend.code) },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = ButtonGreen,
-                                    contentColor = YellowMain
-                                )
-                            ) {
+                            Button(onClick = { onNudge(friend.code) }) {
                                 Text("Nudge!")
                             }
                         }

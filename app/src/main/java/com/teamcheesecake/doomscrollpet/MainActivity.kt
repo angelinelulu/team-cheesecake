@@ -324,6 +324,7 @@ private fun MainAppScreen(
                 state = state,
                 myCode = state.myCode,
                 onSendFriendRequest = petViewModel::sendFriendRequest,
+                onSelectAnimal = petViewModel::selectAnimal,
                 onOpenSettings = onOpenSettings,
                 onSignOut = onSignOut,
                 onNavigateToProfile = onNavigateToProfile,

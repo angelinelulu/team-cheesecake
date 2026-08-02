@@ -1,5 +1,6 @@
 package com.teamcheesecake.doomscrollpet.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,23 +15,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import com.teamcheesecake.doomscrollpet.model.PetMood
-import com.teamcheesecake.doomscrollpet.model.PetUiState
-import com.teamcheesecake.doomscrollpet.ui.theme.YellowBack
-import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
-import com.teamcheesecake.doomscrollpet.ui.theme.ButtonGreen
-import com.teamcheesecake.doomscrollpet.ui.theme.PetText
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
-import java.util.Locale
-import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import com.teamcheesecake.doomscrollpet.model.Animal
 import com.teamcheesecake.doomscrollpet.R
+import com.teamcheesecake.doomscrollpet.model.PetMood
+import com.teamcheesecake.doomscrollpet.model.PetUiState
+import com.teamcheesecake.doomscrollpet.ui.theme.ButtonGreen
+import com.teamcheesecake.doomscrollpet.ui.theme.PetText
+import com.teamcheesecake.doomscrollpet.ui.theme.YellowBack
+import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
 import kotlinx.coroutines.delay
+import coil.ImageLoader
+import coil.compose.rememberAsyncImagePainter
+import coil.decode.GifDecoder
+import androidx.compose.ui.platform.LocalContext
+import java.util.Locale
 
 @Composable
 fun PetActionBottomBar(
@@ -98,6 +104,7 @@ fun PetHomeScreen(
 ) {
     var profileMenuExpanded by remember { mutableStateOf(false) }
     var showAddFriendDialog by remember { mutableStateOf(false) }
+    var showPopup by remember { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxSize()) {
 
@@ -170,20 +177,34 @@ fun PetHomeScreen(
                 .padding(16.dp)
                 .background(YellowMain),
         ) {
-            // Pet Park icon row
+            // Pet Park + Swap Pet buttons, side by side and aligned
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onNavigateToPark),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.clickable(onClick = onNavigateToPark),
+                ) {
                     Image(
                         painter = painterResource(id = R.drawable.park_icon),
                         contentDescription = "Pet Park",
                         modifier = Modifier.size(32.dp),
                     )
                     Text(text = "Pet Park", style = MaterialTheme.typography.labelSmall)
+                }
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.clickable { showPopup = true },
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.swap_pets_button),
+                        contentDescription = "Swap pet",
+                        modifier = Modifier.size(48.dp),
+                    )
+                    Text(text = "Swap Pet", style = MaterialTheme.typography.labelSmall)
                 }
             }
 
@@ -282,7 +303,34 @@ fun PetHomeScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = state.petEmoji, style = MaterialTheme.typography.headlineLarge)
+                    var showCareReaction by remember { mutableStateOf(false) }
+                    LaunchedEffect(state.careReactionTrigger) {
+                        if (state.careReactionTrigger > 0 && state.animal == Animal.DOG) {
+                            showCareReaction = true
+                            delay(1500)
+                            showCareReaction = false
+                        }
+                    }
+
+                    if (showCareReaction) {
+                        val context = LocalContext.current
+                        val imageLoader = remember {
+                            ImageLoader.Builder(context)
+                                .components { add(GifDecoder.Factory()) }
+                                .build()
+                        }
+                        Image(
+                            painter = rememberAsyncImagePainter(
+                                model = R.drawable.dog_eating,
+                                imageLoader = imageLoader,
+                            ),
+                            contentDescription = "${state.animal.displayName} reacting",
+                            modifier = Modifier.size(240.dp),
+                        )
+                    } else {
+                        AnimalVisual(animal = state.animal, health = state.health)
+                    }
+
                     Text(
                         text = moodMessage(state),
                         style = MaterialTheme.typography.bodyLarge,
@@ -301,6 +349,52 @@ fun PetHomeScreen(
                 onSendFriendRequest(code)
                 showAddFriendDialog = false
             },
+        )
+    }
+
+    if (showPopup) {
+        AlertDialog(
+            onDismissRequest = { showPopup = false },
+            title = {
+                Text(
+                    text = "Swap Pet",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.cat),
+                        contentDescription = "Cat Pet",
+                        modifier = Modifier
+                            .size(120.dp)
+                            .padding(bottom = 12.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                    Text(
+                        text = "Would you like to swap to the Cat?",
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showPopup = false
+                    }
+                ) {
+                    Text("Select Cat")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPopup = false }) {
+                    Text("Cancel")
+                }
+            }
         )
     }
 }

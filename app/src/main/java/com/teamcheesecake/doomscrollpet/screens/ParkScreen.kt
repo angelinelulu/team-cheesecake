@@ -216,7 +216,7 @@ private fun ScatteredPet(friend: FriendPetStatus, onClick: () -> Unit) {
             modifier = Modifier.size(120.dp),
             contentAlignment = Alignment.Center,
         ) {
-            AnimalVisual(animal = friend.animal, health = friend.health)
+            AnimalVisual(animal = friend.animal, health = friend.health, size = 120.dp)
         }
 
         Text(
@@ -226,31 +226,32 @@ private fun ScatteredPet(friend: FriendPetStatus, onClick: () -> Unit) {
     }
 }
 
+internal fun animalDrawableRes(animal: Animal, health: Int): Int {
+    val isDogSick = health < 60
+    val isCatSick = health < 20
+
+    return when (animal) {
+        Animal.DOG -> if (isDogSick) R.drawable.dog_character_sick else R.drawable.dog_character
+        Animal.CAT -> if (isCatSick) R.drawable.cat_character_sick else R.drawable.cat_character
+        Animal.BEAR -> R.drawable.bear_character
+        Animal.BUNNY -> R.drawable.bunny_character
+        Animal.COW -> R.drawable.cow_character
+    }
+}
+
 @Composable
-private fun AnimalVisual(animal: Animal, health: Int) {
-    val isSick = health < 20 // adjust threshold to match whatever "sick" means elsewhere in your app
-
-    val gifRes: Int? = when (animal) {
-        Animal.DOG -> if (isSick) R.drawable.dog_character_sick else R.drawable.dog_character
-        Animal.CAT -> R.drawable.cat_character // no sick variant yet — always healthy gif
-        else -> null
+internal fun AnimalVisual(animal: Animal, health: Int, size: androidx.compose.ui.unit.Dp = 240.dp) {
+    val context = LocalContext.current
+    val imageLoader = remember {
+        ImageLoader.Builder(context)
+            .components { add(GifDecoder.Factory()) }
+            .build()
     }
-
-    if (gifRes != null) {
-        val context = LocalContext.current
-        val imageLoader = remember {
-            ImageLoader.Builder(context)
-                .components { add(GifDecoder.Factory()) }
-                .build()
-        }
-        Image(
-            painter = rememberAsyncImagePainter(model = gifRes, imageLoader = imageLoader),
-            contentDescription = animal.displayName,
-            modifier = Modifier.size(120.dp),
-        )
-    } else {
-        Text(text = animal.emoji, style = MaterialTheme.typography.displayLarge)
-    }
+    Image(
+        painter = rememberAsyncImagePainter(model = animalDrawableRes(animal, health), imageLoader = imageLoader),
+        contentDescription = animal.displayName,
+        modifier = Modifier.size(size),
+    )
 }
 
 @Composable

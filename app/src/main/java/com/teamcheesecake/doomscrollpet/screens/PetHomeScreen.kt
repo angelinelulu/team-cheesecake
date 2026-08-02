@@ -100,18 +100,6 @@ fun PetHomeScreen(
     var profileMenuExpanded by remember { mutableStateOf(false) }
     var showAddFriendDialog by remember { mutableStateOf(false) }
     var showPopup by remember { mutableStateOf(false) }
-    var showUnlockPopup by remember { mutableStateOf(false) }
-
-    // Keeps track of previous health value to detect dynamic increase to 100%
-    var previousHealth by remember { mutableIntStateOf(state.health) }
-
-    LaunchedEffect(state.health) {
-        // Only trigger popup when health transitions from under 100 to 100
-        if (previousHealth < 100 && state.health >= 100) {
-            showUnlockPopup = true
-        }
-        previousHealth = state.health
-    }
 
     Column(modifier = modifier.fillMaxSize()) {
 
@@ -369,56 +357,6 @@ fun PetHomeScreen(
             dismissButton = {
                 TextButton(onClick = { showPopup = false }) {
                     Text("Cancel")
-                }
-            }
-        )
-    }
-
-    // --- New Pet Unlocked Popup ---
-    if (showUnlockPopup) {
-        AlertDialog(
-            onDismissRequest = { showUnlockPopup = false },
-            title = {
-                Text(
-                    text = "🎉 New Pet Unlocked!",
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
-            text = {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.cat),
-                        contentDescription = "Unlocked Cat Pet",
-                        modifier = Modifier
-                            .size(120.dp)
-                            .padding(vertical = 12.dp),
-                        contentScale = ContentScale.Fit
-                    )
-                    Text(
-                        text = "Congratulations! You reached 100% health and unlocked the Cat!",
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showUnlockPopup = false
-                        showPopup = true // Opens the swap dialog right away
-                    }
-                ) {
-                    Text("Swap Now")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showUnlockPopup = false }) {
-                    Text("Awesome!")
                 }
             }
         )

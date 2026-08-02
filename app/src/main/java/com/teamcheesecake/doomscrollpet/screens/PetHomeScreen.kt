@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
@@ -268,8 +269,8 @@ fun PetHomeScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .padding(16.dp)
-                .background(YellowMain),
+                .background(YellowMain)
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Pet Park + Swap Pet buttons
@@ -384,7 +385,7 @@ fun PetHomeScreen(
                 val filledHearts = (state.health / 20).coerceIn(0, 5)
                 repeat(5) { index ->
                     Text(
-                        text = if (index < filledHearts) "❤️" else "🤍",
+                        text = if (index < filledHearts) "\u2764\uFE0F" else "\uD83E\uDD0D",
                         style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.padding(horizontal = 2.dp),
                     )
@@ -401,7 +402,10 @@ fun PetHomeScreen(
                     .height(10.dp)
                     .clip(RoundedCornerShape(50)),
                 color = healthColor(state.health),
-                trackColor = Color.LightGray.copy(alpha = 0.5f),
+                trackColor = Color.LightGray,
+                strokeCap = StrokeCap.Butt,
+                gapSize = 0.dp,
+                drawStopIndicator = {}
             )
 
             Spacer(modifier = Modifier.height(16.dp))

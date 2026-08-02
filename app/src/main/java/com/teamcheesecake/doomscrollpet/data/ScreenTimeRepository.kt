@@ -73,4 +73,48 @@ class ScreenTimeRepository(private val context: Context) {
             (totalTimesMs[pkg] ?: 0L) / 60_000L
         }
     }
+
+    /**
+     * Whatever package is currently in the foreground, and how long (in ms) it's been there
+     * *continuously* — i.e. since the last time it was resumed, not a cumulative daily total.
+     * Used for near-real-time "you've been in this app for N seconds" checks, as opposed to
+     * [getTodayUsageMinutes]'s whole-day totals. Returns null if usage access isn't granted or
+     * nothing has been resumed within the lookback window (e.g. screen is off).
+     */
+    fun getCurrentForegroundSession(): ForegroundSession? {
+        if (!hasUsageAccess()) return null
+
+        val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val now = System.currentTimeMillis()
+        val events = usageStatsManager.queryEvents(now - FOREGROUND_LOOKBACK_MS, now)
+        val event = UsageEvents.Event()
+
+        // Events are delivered in chronological order, so the last resume not yet followed by
+        // a pause for that same package is whatever's on screen right now.
+        var currentPackage: String? = null
+        var currentSince = 0L
+
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            val pkg = event.packageName ?: continue
+            when (event.eventType) {
+                UsageEvents.Event.ACTIVITY_RESUMED, UsageEvents.Event.MOVE_TO_FOREGROUND -> {
+                    currentPackage = pkg
+                    currentSince = event.timeStamp
+                }
+                UsageEvents.Event.ACTIVITY_PAUSED, UsageEvents.Event.MOVE_TO_BACKGROUND -> {
+                    if (currentPackage == pkg) currentPackage = null
+                }
+            }
+        }
+
+        val pkg = currentPackage ?: return null
+        return ForegroundSession(packageName = pkg, sinceMillis = currentSince, dwellMs = now - currentSince)
+    }
+
+    data class ForegroundSession(val packageName: String, val sinceMillis: Long, val dwellMs: Long)
+
+    companion object {
+        private const val FOREGROUND_LOOKBACK_MS = 5 * 60 * 1000L
+    }
 }

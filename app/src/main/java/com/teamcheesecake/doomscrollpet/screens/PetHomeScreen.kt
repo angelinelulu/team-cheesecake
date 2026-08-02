@@ -191,11 +191,6 @@ fun PetHomeScreen(
                         color = PetText,
                         textAlign = TextAlign.Center,
                     )
-                IconButton(onClick = {
-                    AudioManager.playButtonTap()
-                    onOpenSettings()
-                }) {
-                    Icon(Icons.Default.Settings, contentDescription = "Settings")
                 }
 
                 Box {
@@ -209,11 +204,6 @@ fun PetHomeScreen(
                             modifier = Modifier.size(48.dp),
                             contentScale = ContentScale.Fit
                         )
-                    IconButton(onClick = {
-                        AudioManager.playButtonTap()
-                        profileMenuExpanded = true
-                    }) {
-                        Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
                     }
                     DropdownMenu(
                         expanded = profileMenuExpanded,

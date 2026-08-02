@@ -331,6 +331,7 @@ private fun MainAppScreen(
                 onSignOut = onSignOut,
                 onNavigateToProfile = onNavigateToProfile,
                 onNavigateToPark = onNavigateToPark,
+                onSetPetName = petViewModel::setPetName,
                 onMarkRewardSeen = petViewModel::markRewardAsSeen,
                 modifier = Modifier.padding(innerPadding),
             )

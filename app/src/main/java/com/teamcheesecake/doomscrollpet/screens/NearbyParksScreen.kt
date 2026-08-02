@@ -151,24 +151,24 @@ fun NearbyParksScreen(
                             Icons.Default.Park,
                             contentDescription = null,
                             tint = PetText,
-                            modifier = Modifier.size(32.dp),
+                            modifier = Modifier.size(48.dp),
                         )
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = park.name,
-                                style = MaterialTheme.typography.titleMedium,
+                                style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = PetText
                             )
                             Text(
                                 text = "${park.distanceKm} km away",
-                                style = MaterialTheme.typography.labelMedium,
+                                style = MaterialTheme.typography.bodyLarge,
                                 color = PetText
                             )
                             Text(
                                 text = park.description,
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = PetText
                             )
                         }

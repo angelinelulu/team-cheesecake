@@ -146,6 +146,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                 uiState = uiState.copy(
                     myCode = code,
                     ownerName = snapshot.getString("ownerName") ?: uiState.ownerName,
+                    petName = snapshot.getString("petName") ?: uiState.petName,
                     animal = savedAnimal ?: uiState.animal,
                     avoidApps = savedAvoidApps,
                     moreApps = savedMoreApps,
@@ -180,6 +181,14 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         db.collection("users").document(userId)
             .set(mapOf("ownerName" to name), SetOptions.merge())
             .addOnFailureListener { e -> Log.e(TAG, "Failed to save name", e) }
+    }
+
+    fun setPetName(name: String) {
+        uiState = uiState.copy(petName = name)
+        val userId = uid ?: return
+        db.collection("users").document(userId)
+            .set(mapOf("petName" to name), SetOptions.merge())
+            .addOnFailureListener { e -> Log.e(TAG, "Failed to save pet name", e) }
     }
 
     fun selectAnimal(animal: Animal) {

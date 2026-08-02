@@ -93,6 +93,37 @@ private fun formatCooldown(millis: Long): String {
 }
 
 @Composable
+private fun EditPetNameDialog(
+    currentName: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var nameInput by remember { mutableStateOf(currentName) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Pet Name", fontWeight = FontWeight.Bold) },
+        text = {
+            OutlinedTextField(
+                value = nameInput,
+                onValueChange = { nameInput = it },
+                label = { Text("Enter pet name") },
+                singleLine = true
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(nameInput) }) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
 fun PetHomeScreen(
     state: PetUiState,
     myCode: String,
@@ -102,12 +133,14 @@ fun PetHomeScreen(
     onSelectAnimal: (Animal) -> Unit,
     onNavigateToProfile: () -> Unit,
     onNavigateToPark: () -> Unit,
+    onSetPetName: (String) -> Unit,
     onMarkRewardSeen: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var profileMenuExpanded by remember { mutableStateOf(false) }
     var showAddFriendDialog by remember { mutableStateOf(false) }
     var showPopup by remember { mutableStateOf(false) }
+    var showEditPetNameDialog by remember { mutableStateOf(false) }
 
     // Logic to show productivity reward if we have new minutes since last seen
     if (state.moreAppMinutesToday > state.lastSeenRewardMinutes) {
@@ -124,7 +157,7 @@ fun PetHomeScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(YellowBack)
-                .padding(bottom = 12.dp),
+                .padding(bottom = 8.dp),
         ) {
             Row(
                 modifier = Modifier
@@ -133,19 +166,49 @@ fun PetHomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                IconButton(
+                    onClick = onOpenSettings,
+                    modifier = Modifier.size(64.dp)
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.settings),
+                        contentDescription = "Settings",
+                        modifier = Modifier.size(48.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "SNOOT",
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = state.ownerName,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = PetText,
+                        textAlign = TextAlign.Center,
+                    )
                 IconButton(onClick = {
                     AudioManager.playButtonTap()
                     onOpenSettings()
                 }) {
                     Icon(Icons.Default.Settings, contentDescription = "Settings")
                 }
-                Text(
-                    text = "SNOOT",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                )
 
                 Box {
+                    IconButton(
+                        onClick = { profileMenuExpanded = true },
+                        modifier = Modifier.size(64.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.profile_pic),
+                            contentDescription = "Profile",
+                            modifier = Modifier.size(48.dp),
+                            contentScale = ContentScale.Fit
+                        )
                     IconButton(onClick = {
                         AudioManager.playButtonTap()
                         profileMenuExpanded = true
@@ -174,18 +237,17 @@ fun PetHomeScreen(
                                 onNavigateToProfile()
                             },
                         )
+                        DropdownMenuItem(
+                            text = { Text("Edit Pet Name") },
+                            leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                            onClick = {
+                                profileMenuExpanded = false
+                                showEditPetNameDialog = true
+                            },
+                        )
                     }
                 }
             }
-            Text(
-                text = state.ownerName,
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(YellowBack)
-                    .padding(bottom = 8.dp),
-            )
         }
 
         // --- Middle Content Area ---
@@ -195,8 +257,9 @@ fun PetHomeScreen(
                 .weight(1f)
                 .padding(16.dp)
                 .background(YellowMain),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Pet Park + Swap Pet buttons, side by side and aligned
+            // Pet Park + Swap Pet buttons
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -207,13 +270,21 @@ fun PetHomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.clickable(onClick = onNavigateToPark),
+                ) {
                     Image(
-                        painter = painterResource(id = R.drawable.park_icon),
+                        painter = painterResource(id = R.drawable.park_sign),
                         contentDescription = "Pet Park",
-                        modifier = Modifier.size(32.dp),
+                        modifier = Modifier.size(64.dp),
+                        contentScale = ContentScale.Fit
                     )
-                    Text(text = "Pet Park", style = MaterialTheme.typography.labelSmall)
+                    Text(
+                        text = "Pet Park",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
 
                 Column(
@@ -226,60 +297,66 @@ fun PetHomeScreen(
                     Image(
                         painter = painterResource(id = R.drawable.swap_pets_button),
                         contentDescription = "Swap pet",
-                        modifier = Modifier.size(48.dp),
+                        modifier = Modifier.size(64.dp),
+                        contentScale = ContentScale.Fit
                     )
-                    Text(text = "Swap Pet", style = MaterialTheme.typography.labelSmall)
+                    Text(
+                        text = "Swap Pet",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.weight(0.1f))
 
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("Doomscroll Timer: ")
-                    }
-                    append("${state.doomscrollMinutesToday} / ${state.doomscrollLimitMinutes} min")
-                }
-            )
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("Productivity Timer: ")
-                    }
-                    append("${state.moreAppMinutesToday} min(s)")
-                }
-            )
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("Distance Covered Today: ")
-                    }
-                    append("${formatKm(state.distanceMetersToday)} km")
-                }
-            )
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("Streak: ")
-                    }
-                    append("${state.streakDays} day(s)")
-                }
-            )
-            Text(
-                text = "Badges",
-                fontWeight = FontWeight.Bold
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = if (state.petName.isNotBlank()) state.petName else "${state.ownerName}'s ${state.animal.displayName}",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = PetText,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
 
-            if (!state.screenTimeConnected) {
-                Text(
-                    text = "Not connected: screen time",
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
+                    var showCareReaction by remember { mutableStateOf(false) }
+                    LaunchedEffect(state.careReactionTrigger) {
+                        if (state.careReactionTrigger > 0 && state.animal == Animal.DOG) {
+                            showCareReaction = true
+                            delay(1500)
+                            showCareReaction = false
+                        }
+                    }
+
+                    if (showCareReaction) {
+                        val context = LocalContext.current
+                        val imageLoader = remember {
+                            ImageLoader.Builder(context)
+                                .components { add(GifDecoder.Factory()) }
+                                .build()
+                        }
+                        Image(
+                            painter = rememberAsyncImagePainter(
+                                model = R.drawable.dog_eating,
+                                imageLoader = imageLoader,
+                            ),
+                            contentDescription = "${state.animal.displayName} reacting",
+                            modifier = Modifier.size(240.dp),
+                        )
+                    } else {
+                        AnimalVisual(animal = state.animal, health = state.health)
+                    }
+                }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             // Hearts row
             Row(
@@ -311,58 +388,25 @@ fun PetHomeScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (state.ownerName.isNotBlank()) {
-                Text(
-                    text = "${state.ownerName}'s ${state.animal.displayName}",
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                )
-            }
+            Text(
+                text = moodMessage(state),
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+            )
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .background(YellowMain, RoundedCornerShape(8.dp)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    var showCareReaction by remember { mutableStateOf(false) }
-                    LaunchedEffect(state.careReactionTrigger) {
-                        if (state.careReactionTrigger > 0 && state.animal == Animal.DOG) {
-                            showCareReaction = true
-                            delay(1500)
-                            showCareReaction = false
-                        }
-                    }
-
-                    if (showCareReaction) {
-                        val context = LocalContext.current
-                        val imageLoader = remember {
-                            ImageLoader.Builder(context)
-                                .components { add(GifDecoder.Factory()) }
-                                .build()
-                        }
-                        Image(
-                            painter = rememberAsyncImagePainter(
-                                model = R.drawable.dog_eating,
-                                imageLoader = imageLoader,
-                            ),
-                            contentDescription = "${state.animal.displayName} reacting",
-                            modifier = Modifier.size(240.dp),
-                        )
-                    } else {
-                        AnimalVisual(animal = state.animal, health = state.health)
-                    }
-
-                    Text(
-                        text = moodMessage(state),
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center,
-                    )
-                }
-            }
+            Spacer(modifier = Modifier.weight(0.1f))
         }
+    }
+
+    if (showEditPetNameDialog) {
+        EditPetNameDialog(
+            currentName = state.petName,
+            onDismiss = { showEditPetNameDialog = false },
+            onConfirm = { newName ->
+                onSetPetName(newName)
+                showEditPetNameDialog = false
+            }
+        )
     }
 
     if (showAddFriendDialog) {
@@ -532,24 +576,25 @@ private fun ActionIcon(
     ) {
         Box(
             modifier = Modifier
-                .size(56.dp)
+                .size(72.dp)
                 .background(
                     if (enabled) YellowBack else Color.Gray.copy(alpha = 0.3f),
-                    RoundedCornerShape(8.dp)
+                    RoundedCornerShape(12.dp)
                 ),
             contentAlignment = Alignment.Center,
         ) {
             Image(
                 painter = painterResource(id = iconRes),
                 contentDescription = label,
-                modifier = Modifier.size(48.dp),
-                alpha = if (enabled) 1f else 0.5f
+                modifier = Modifier.size(64.dp),
+                alpha = if (enabled) 1f else 0.5f,
+                contentScale = ContentScale.Fit
             )
             if (!enabled && cooldownMillis > 0) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(8.dp)),
+                        .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(12.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -564,8 +609,10 @@ private fun ActionIcon(
         }
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = if (enabled) Color.Unspecified else Color.Gray
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = if (enabled) Color.Unspecified else Color.Gray,
+            modifier = Modifier.padding(top = 4.dp)
         )
     }
 }

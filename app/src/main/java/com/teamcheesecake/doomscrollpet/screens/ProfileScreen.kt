@@ -120,7 +120,10 @@ fun ProfileScreen(
                     },
                     enabled = codeInput.isNotBlank(),
                     modifier = Modifier.padding(start = 8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = ButtonGreen)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = ButtonGreen,
+                        contentColor = YellowMain
+                    )
                 ) {
                     Text("Send")
                 }
@@ -139,7 +142,10 @@ fun ProfileScreen(
                             }
                             Button(
                                 onClick = { onAcceptRequest(request.code) },
-                                colors = ButtonDefaults.buttonColors(containerColor = ButtonGreen)
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = ButtonGreen,
+                                    contentColor = YellowMain
+                                )
                             ) {
                                 Text("Accept")
                             }
@@ -166,7 +172,10 @@ fun ProfileScreen(
                 trailing = {
                     Button(
                         onClick = { /* nudge not implemented yet */ },
-                        colors = ButtonDefaults.buttonColors(containerColor = ButtonGreen)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = ButtonGreen,
+                            contentColor = YellowMain
+                        )
                     ) {
                         Text("Nudge!")
                     }
@@ -179,7 +188,10 @@ fun ProfileScreen(
             Button(
                 onClick = onSignOut,
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = ButtonGreen)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = ButtonGreen,
+                    contentColor = YellowMain
+                )
             ) {
                 Text("Sign Out")
             }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -18,6 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.teamcheesecake.doomscrollpet.model.Friend
+import com.teamcheesecake.doomscrollpet.ui.theme.ButtonGreen
+import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
 
 @Composable
 fun FriendsScreen(
@@ -60,7 +63,13 @@ fun FriendsScreen(
                                 OutlinedButton(onClick = { onDeclineRequest(request.code) }) {
                                     Text("Decline")
                                 }
-                                Button(onClick = { onAcceptRequest(request.code) }) {
+                                Button(
+                                    onClick = { onAcceptRequest(request.code) },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = ButtonGreen,
+                                        contentColor = YellowMain
+                                    )
+                                ) {
                                     Text("Accept")
                                 }
                             }

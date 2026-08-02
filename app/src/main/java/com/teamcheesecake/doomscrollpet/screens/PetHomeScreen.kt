@@ -111,12 +111,18 @@ private fun EditPetNameDialog(
             )
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(nameInput) }) {
+            TextButton(
+                onClick = { onConfirm(nameInput) },
+                colors = ButtonDefaults.textButtonColors(contentColor = PetText)
+            ) {
                 Text("Save")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(contentColor = PetText)
+            ) {
                 Text("Cancel")
             }
         }
@@ -167,7 +173,10 @@ fun PetHomeScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(
-                    onClick = onOpenSettings,
+                    onClick = {
+                        AudioManager.playButtonTap()
+                        onOpenSettings()
+                    },
                     modifier = Modifier.size(64.dp)
                 ) {
                     Image(
@@ -184,23 +193,23 @@ fun PetHomeScreen(
                         style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.Bold,
                     )
-                    Text(
-                        text = state.ownerName,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = PetText,
-                        textAlign = TextAlign.Center,
-                    )
-                IconButton(onClick = {
-                    AudioManager.playButtonTap()
-                    onOpenSettings()
-                }) {
-                    Icon(Icons.Default.Settings, contentDescription = "Settings")
+                    if (state.ownerName.isNotBlank()) {
+                        Text(
+                            text = state.ownerName,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = PetText,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                 }
 
                 Box {
                     IconButton(
-                        onClick = { profileMenuExpanded = true },
+                        onClick = {
+                            AudioManager.playButtonTap()
+                            profileMenuExpanded = true
+                        },
                         modifier = Modifier.size(64.dp)
                     ) {
                         Image(
@@ -209,11 +218,6 @@ fun PetHomeScreen(
                             modifier = Modifier.size(48.dp),
                             contentScale = ContentScale.Fit
                         )
-                    IconButton(onClick = {
-                        AudioManager.playButtonTap()
-                        profileMenuExpanded = true
-                    }) {
-                        Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
                     }
                     DropdownMenu(
                         expanded = profileMenuExpanded,
@@ -241,9 +245,18 @@ fun PetHomeScreen(
                             text = { Text("Edit Pet Name") },
                             leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
                             onClick = {
+                                AudioManager.playButtonTap()
                                 profileMenuExpanded = false
                                 showEditPetNameDialog = true
                             },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Sign Out") },
+                            onClick = {
+                                AudioManager.playButtonTap()
+                                profileMenuExpanded = false
+                                onSignOut()
+                            }
                         )
                     }
                 }
@@ -261,18 +274,16 @@ fun PetHomeScreen(
         ) {
             // Pet Park + Swap Pet buttons
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = {
-                        AudioManager.playButtonTap()
-                        onNavigateToPark()
-                    }),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable(onClick = onNavigateToPark),
+                    modifier = Modifier.clickable {
+                        AudioManager.playButtonTap()
+                        onNavigateToPark()
+                    },
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.park_sign),
@@ -317,13 +328,20 @@ fun PetHomeScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    val displayName = when {
+                        state.petName.isNotBlank() -> state.petName
+                        state.ownerName.isNotBlank() -> "${state.ownerName}'s ${state.animal.displayName}"
+                        else -> "Your ${state.animal.displayName}"
+                    }
                     Text(
-                        text = if (state.petName.isNotBlank()) state.petName else "${state.ownerName}'s ${state.animal.displayName}",
+                        text = displayName,
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = PetText,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(bottom = 16.dp)
+                        modifier = Modifier
+                            .padding(bottom = 16.dp)
+                            .clickable { showEditPetNameDialog = true }
                     )
 
                     var showCareReaction by remember { mutableStateOf(false) }
@@ -366,7 +384,7 @@ fun PetHomeScreen(
                 val filledHearts = (state.health / 20).coerceIn(0, 5)
                 repeat(5) { index ->
                     Text(
-                        text = if (index < filledHearts) "\u2764\uFE0F" else "\uD83E\uDD0D",
+                        text = if (index < filledHearts) "❤️" else "🤍",
                         style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.padding(horizontal = 2.dp),
                     )
@@ -455,16 +473,20 @@ fun PetHomeScreen(
                         onSelectAnimal(Animal.CAT)
                         AudioManager.playButtonTap()
                         showPopup = false
-                    }
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = PetText)
                 ) {
                     Text("Select Cat")
                 }
             },
             dismissButton = {
-                TextButton(onClick = {
-                    AudioManager.playButtonTap()
-                    showPopup = false
-                }) {
+                TextButton(
+                    onClick = {
+                        AudioManager.playButtonTap()
+                        showPopup = false
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = PetText)
+                ) {
                     Text("Cancel")
                 }
             }
@@ -497,7 +519,10 @@ private fun ProductivityRewardDialog(
             Button(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = ButtonGreen)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = ButtonGreen,
+                    contentColor = YellowMain
+                )
             ) {
                 Text("Keep it up!")
             }
@@ -544,15 +569,19 @@ private fun AddFriendDialog(
                     onSubmit(codeInput.trim())
                 },
                 enabled = codeInput.isNotBlank(),
+                colors = ButtonDefaults.textButtonColors(contentColor = PetText)
             ) {
                 Text("Send Request")
             }
         },
         dismissButton = {
-            TextButton(onClick = {
-                AudioManager.playButtonTap()
-                onDismiss()
-            }) { Text("Cancel") }
+            TextButton(
+                onClick = {
+                    AudioManager.playButtonTap()
+                    onDismiss()
+                },
+                colors = ButtonDefaults.textButtonColors(contentColor = PetText)
+            ) { Text("Cancel") }
         },
     )
 }

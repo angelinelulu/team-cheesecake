@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import com.teamcheesecake.doomscrollpet.model.Animal
 import com.teamcheesecake.doomscrollpet.R
 import com.teamcheesecake.doomscrollpet.model.PetMood
 import com.teamcheesecake.doomscrollpet.model.PetUiState
@@ -31,6 +32,10 @@ import com.teamcheesecake.doomscrollpet.ui.theme.PetText
 import com.teamcheesecake.doomscrollpet.ui.theme.YellowBack
 import com.teamcheesecake.doomscrollpet.ui.theme.YellowMain
 import kotlinx.coroutines.delay
+import coil.ImageLoader
+import coil.compose.rememberAsyncImagePainter
+import coil.decode.GifDecoder
+import androidx.compose.ui.platform.LocalContext
 import java.util.Locale
 
 @Composable
@@ -294,7 +299,34 @@ fun PetHomeScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = state.petEmoji, style = MaterialTheme.typography.headlineLarge)
+                    var showCareReaction by remember { mutableStateOf(false) }
+                    LaunchedEffect(state.careReactionTrigger) {
+                        if (state.careReactionTrigger > 0 && state.animal == Animal.DOG) {
+                            showCareReaction = true
+                            delay(1500)
+                            showCareReaction = false
+                        }
+                    }
+
+                    if (showCareReaction) {
+                        val context = LocalContext.current
+                        val imageLoader = remember {
+                            ImageLoader.Builder(context)
+                                .components { add(GifDecoder.Factory()) }
+                                .build()
+                        }
+                        Image(
+                            painter = rememberAsyncImagePainter(
+                                model = R.drawable.dog_eating,
+                                imageLoader = imageLoader,
+                            ),
+                            contentDescription = "${state.animal.displayName} reacting",
+                            modifier = Modifier.size(240.dp),
+                        )
+                    } else {
+                        AnimalVisual(animal = state.animal, health = state.health)
+                    }
+
                     Text(
                         text = moodMessage(state),
                         style = MaterialTheme.typography.bodyLarge,

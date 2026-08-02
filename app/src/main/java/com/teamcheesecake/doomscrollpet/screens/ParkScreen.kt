@@ -282,24 +282,15 @@ private fun HealthHappinessBar(health: Int, happiness: Int) {
                 ),
         )
 
-        // Health marker, above the bar.
+        // Health marker, beneath the bar.
         Icon(
-            Icons.Filled.ArrowDropDown,
+            Icons.Filled.ArrowDropUp,
             contentDescription = "Health",
             tint = Color.Black,
             modifier = Modifier
-                .align(Alignment.TopStart)
-                .offset(x = barWidth * (health / 100f) - 12.dp),
-        )
-
-        // Happiness marker, below the bar.
-        Icon(
-            Icons.Filled.ArrowDropUp,
-            contentDescription = "Happiness",
-            tint = Color(0xFF3949AB),
-            modifier = Modifier
                 .align(Alignment.BottomStart)
-                .offset(x = barWidth * (happiness / 100f) - 12.dp),
+                .offset(x = barWidth * (health / 100f) - 45.dp, y = 16.dp)
+                .size(52.dp),
         )
     }
 }

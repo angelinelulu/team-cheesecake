@@ -15,6 +15,7 @@ import com.teamcheesecake.doomscrollpet.data.FriendRepository
 import com.teamcheesecake.doomscrollpet.data.LocationRepository
 import com.teamcheesecake.doomscrollpet.data.ScreenTimeRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.Calendar
@@ -157,8 +158,6 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                 isAccountLoaded = true
                 recomputeHealth()
                 refreshScreenTime()
-                startListeningToFriendLinks()
-                recomputeHealth()
                 startListeningToFriendLinks()
                 startHappinessTicker()
             } catch (e: Exception) {
@@ -418,6 +417,8 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                         doomscrollMinutesToday = doomscrollMinutes,
                     )
                 }
+                uiState = uiState.copy(friendPetStatuses = statuses)
+            }
     }
 
     /**

@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
@@ -49,6 +50,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
 
     private var friendLinksListener: ListenerRegistration? = null
     private var friendStatsListener: ListenerRegistration? = null
+    private var ownFriendBoostListener: ListenerRegistration? = null
 
     private var myLat: Double? = null
     private var myLng: Double? = null
@@ -106,6 +108,8 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         friendLinksListener = null
         friendStatsListener?.remove()
         friendStatsListener = null
+        ownFriendBoostListener?.remove()
+        ownFriendBoostListener = null
         myLat = null
         myLng = null
 
@@ -127,7 +131,24 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                 val snapshot = userDocRef.get().await()
                 val existingCode = snapshot.getString("myCode")
 
-                val code = existingCode ?: uiState.myCode
+                // First time this account has ever needed a code: DeviceIdentity generated one
+                // locally with no way to check for collisions, so verify it's actually free
+                // before committing to it — a duplicate code would silently misdirect every
+                // friend-code lookup (requests, health nudges, stat listeners) to the wrong
+                // account. Regenerate and retry a few times in the rare case it's taken.
+                val code = existingCode ?: run {
+                    var candidate = uiState.myCode
+                    repeat(5) {
+                        val collision = db.collection("users")
+                            .whereEqualTo("myCode", candidate)
+                            .limit(1)
+                            .get()
+                            .await()
+                        if (collision.isEmpty) return@run candidate
+                        candidate = DeviceIdentity.regenerateCode(getApplication())
+                    }
+                    candidate
+                }
                 if (existingCode == null) {
                     userDocRef.set(mapOf("myCode" to code), SetOptions.merge()).await()
                 }
@@ -155,6 +176,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     moreAppMinutesToday = savedMoreApp,
                     streakDays = (snapshot.getLong("streakDays") ?: 0L).toInt(),
                     proximityBonus = (snapshot.getLong("proximityBonus") ?: 0L).toInt(),
+                    friendBoost = (snapshot.getLong("friendBoost") ?: 0L).toInt(),
                     careBonus = (snapshot.getLong("careBonus") ?: 0L).toInt(),
                     lastFedTimestamp = snapshot.getLong("lastFedTimestamp") ?: 0L,
                     lastWaterTimestamp = snapshot.getLong("lastWaterTimestamp") ?: 0L,
@@ -168,6 +190,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                 recomputeHealth()
                 refreshScreenTime()
                 startListeningToFriendLinks()
+                startListeningToOwnFriendBoost(userId)
                 startHappinessTicker()
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load or create account code", e)
@@ -275,7 +298,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                 uiState.moreAppMinutesToday * MORE_MINUTE_BONUS +
                 (uiState.distanceMetersToday / METERS_PER_HEALTH_POINT).toInt() +
                 uiState.proximityBonus +
-                uiState.careBonus
+                uiState.friendBoost
         val newHealth = computed.coerceIn(0, 100)
 
         // Happiness depletes by the same amount health drops. It does NOT rise here —
@@ -327,6 +350,10 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
             "health" to uiState.health,
             "happiness" to uiState.happiness,
             "proximityBonus" to uiState.proximityBonus,
+            // friendBoost deliberately excluded — it's only ever mutated remotely by friends'
+            // atomic increments (see adjustFriendHealth) and mirrored in via
+            // startListeningToOwnFriendBoost. Writing it back here would stomp on a friend's
+            // increment with our own stale in-memory copy.
             "careBonus" to uiState.careBonus,
             "lastFedTimestamp" to uiState.lastFedTimestamp,
             "lastWaterTimestamp" to uiState.lastWaterTimestamp,
@@ -335,6 +362,25 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         db.collection("users").document(userId)
             .set(data, SetOptions.merge())
             .addOnFailureListener { e -> Log.e(TAG, "Failed to sync stats", e) }
+    }
+
+    /**
+     * Mirrors this user's own `friendBoost` field live, so a friend's "Give Treat!"/"Nudge!"
+     * (see [adjustFriendHealth], which increments it remotely) shows up immediately without
+     * waiting for a restart — and so [syncStatsToFirestore] never has a stale local copy to
+     * accidentally overwrite it with.
+     */
+    private fun startListeningToOwnFriendBoost(userId: String) {
+        ownFriendBoostListener?.remove()
+        ownFriendBoostListener = db.collection("users").document(userId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || snapshot == null) return@addSnapshotListener
+                val remoteFriendBoost = (snapshot.getLong("friendBoost") ?: 0L).toInt()
+                if (remoteFriendBoost != uiState.friendBoost) {
+                    uiState = uiState.copy(friendBoost = remoteFriendBoost)
+                    recomputeHealth()
+                }
+            }
     }
 
     private fun checkDailyReset() {
@@ -352,6 +398,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                 moreAppMinutesToday = 0,
                 distanceMetersToday = 0.0,
                 proximityBonus = 0,
+                friendBoost = 0,
                 careBonus = 0
             )
         }
@@ -448,8 +495,13 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Adjusts a friend's health by [delta] (e.g. from "Give Treat!" or "Nudge!"), clamped 0-100.
-     * Looks up their Firestore doc by myCode since that's the only identifier we have for them.
+     * Bumps a friend's `friendBoost` accumulator by [delta] (e.g. from "Give Treat!" or
+     * "Nudge!"), which their own recomputeHealth() folds into their health just like
+     * proximityBonus/careBonus — so it actually sticks (everywhere, not just the Pet Park
+     * snapshot) instead of being overwritten the next time their device recomputes its own
+     * health. Uses FieldValue.increment for an atomic write, since two friends could nudge the
+     * same person at once. Looks up their Firestore doc by myCode since that's the only
+     * identifier we have for them.
      */
     fun adjustFriendHealth(code: String, delta: Int) {
         viewModelScope.launch {
@@ -460,9 +512,10 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     .get()
                     .await()
                 val doc = query.documents.firstOrNull() ?: return@launch
-                val currentHealth = (doc.getLong("health") ?: 80L).toInt()
-                val newHealth = (currentHealth + delta).coerceIn(0, 100)
-                doc.reference.set(mapOf("health" to newHealth), SetOptions.merge()).await()
+                doc.reference.set(
+                    mapOf("friendBoost" to FieldValue.increment(delta.toLong())),
+                    SetOptions.merge(),
+                ).await()
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to adjust friend health for code $code", e)
             }
@@ -538,5 +591,6 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         super.onCleared()
         friendLinksListener?.remove()
         friendStatsListener?.remove()
+        ownFriendBoostListener?.remove()
     }
 }

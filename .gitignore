@@ -12,3 +12,4 @@
 .cxx
 /app/build
 *.hprof
+app/google-services.json
